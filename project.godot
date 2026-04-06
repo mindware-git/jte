@@ -11,8 +11,14 @@ config_version=5
 [application]
 
 config/name="jte"
+run/main_scene="uid://ciem436hlkuee"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
+
+[autoload]
+
+GameManager="*uid://be3h38syk5s23"
+SaveManager="*uid://bwvn11dqijkiu"
 
 [display]
 
@@ -24,6 +30,10 @@ window/stretch/aspect="expand"
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/gut/plugin.cfg")
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://localization/translations.en.translation", "res://localization/translations.ja.translation", "res://localization/translations.ko.translation", "res://localization/translations.zh.translation")
 
 [physics]
 
