@@ -22,45 +22,88 @@ func _register_all_skills() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _register_basic_skills() -> void:
-	# 화염 참격 - Flame Slash: 단일 불 속성 공격
+	# 화염 참격 - Flame Slash: 단일 불 속성 공격 (used by test_battle_targeting.gd)
 	_register_skill(_create_attack_skill(
 		"flame_slash",
 		"Flame Slash",
 		"Fire attack, 1.5x damage.",
 		1, 10, 0, 1.5, SkillData.SkillElement.FIRE, SkillData.SkillRangeType.SINGLE
 	))
-	
-	# 빙의 창 - Ice Spear: 십자 범위 물 속성 공격
-	_register_skill(_create_attack_skill(
-		"ice_spear",
-		"Ice Spear",
-		"Ice attack, 2.0x damage, cross range.",
-		1, 15, 5, 2.0, SkillData.SkillElement.WATER, SkillData.SkillRangeType.CROSS_1
-	))
-	
-	# 뇌전 폭풍 - Thunder Storm: 3x3 범위 바람 속성 공격
-	_register_skill(_create_attack_skill(
-		"thunder_storm",
-		"Thunder Storm",
-		"Lightning attack, 1.8x damage, area.",
-		1, 20, 10, 1.8, SkillData.SkillElement.WIND, SkillData.SkillRangeType.SQUARE_3x3
-	))
-	
-	# 빛의 치유 - Heal Light: 단일 대상 치유
+
+	# Sanzang Skills
+	# 청심진언 (Cheongsim Jineon) - test_heal_skill_properties, test_skill_unlock_levels
 	_register_skill(_create_heal_skill(
-		"heal_light",
-		"Heal Light",
-		"Heals ally for 50 HP.",
-		1, 12, 50
+		"cheongsim_jineon",
+		"청심진언",
+		"치유 스킬",
+		1, 8, 30
 	))
 	
-	# 보호의 장벽 - Protect Barrier: 방어력 버프
-	_register_skill(_create_buff_skill(
-		"protect_barrier",
-		"Protect Barrier",
-		"Defense +5 for 3 turns.",
-		1, 8, 0, "defense", 5, 3
+	_register_skill(_create_heal_skill("daebe_jineon", "대비진언", "치유 스킬", 5, 10, 50))
+	_register_skill(_create_heal_skill("jeonggi_jeongsim", "정기정심", "치유", 10, 15, 70))
+	_register_skill(_create_heal_skill("bongrae_hoebok", "봉래회복", "치유", 15, 20, 100))
+	_register_skill(_create_heal_skill("daejadaebi", "대자대비", "치유", 20, 30, 150))
+	_register_skill(_create_heal_skill("honjeongri", "혼정리", "치유", 25, 40, 200))
+
+	# Wukong Skills
+	# 돌원숭이치기 (Dolwonsungi) - test_attack_skill_properties
+	_register_skill(_create_attack_skill(
+		"dolwonsungi",
+		"돌원숭이치기",
+		"기본 공격 스킬",
+		1, 10, 0, 1.5, SkillData.SkillElement.EARTH, SkillData.SkillRangeType.SINGLE
 	))
+	
+	# 여의난무 (Yeoui Nanmu) - test_skill_unlock_levels
+	_register_skill(_create_attack_skill(
+		"yeoui_nanmu",
+		"여의난무",
+		"최종 공격 스킬",
+		20, 50, 0, 3.0, SkillData.SkillElement.NONE, SkillData.SkillRangeType.SQUARE_3x3
+	))
+
+	# 원숭이분신 (Wonsung Bunsin) - test_buff_skill_properties
+	_register_skill(_create_buff_skill(
+		"wonsung_bunsin",
+		"원숭이분신",
+		"속도 버프",
+		5, 15, 0, "speed", 8, 3
+	))
+
+	# 잔원숭이웃음 (Janwonsung Utum) - test_debuff_skill_properties
+	_register_skill(_create_debuff_skill(
+		"janwonsung_utum",
+		"잔원숭이웃음",
+		"속도 디버프",
+		10, 15, 0, "speed", -5, 3
+	))
+
+	# 주작난봉 (Jujak Nanbong) - test_wukong_fire_skill
+	_register_skill(_create_attack_skill(
+		"jujak_nanbong",
+		"주작난봉",
+		"불 속성 공격",
+		12, 20, 0, 2.0, SkillData.SkillElement.FIRE, SkillData.SkillRangeType.CROSS_1
+	))
+
+	# 청룡봉격 (Cheongryong Bonggyeok) - test_wukong_wind_skill
+	_register_skill(_create_attack_skill(
+		"cheongryong_bonggyeok",
+		"청룡봉격",
+		"바람 속성 공격",
+		8, 20, 0, 2.0, SkillData.SkillElement.WIND, SkillData.SkillRangeType.CROSS_1
+	))
+
+	# 현무거치 (Hyeonmu Geochi) - test_wukong_water_skill
+	_register_skill(_create_attack_skill(
+		"hyeonmu_geochi",
+		"현무거치",
+		"물 속성 공격",
+		15, 20, 0, 2.0, SkillData.SkillElement.WATER, SkillData.SkillRangeType.CROSS_1
+	))
+	
+	_register_skill(_create_attack_skill("baekho_dwijipgi", "백호뒤집기", "공격", 10, 20, 0, 2.0, SkillData.SkillElement.NONE, SkillData.SkillRangeType.SINGLE))
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
