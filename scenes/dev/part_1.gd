@@ -15,7 +15,7 @@ func _ready() -> void:
 		print("파티: ", GameManager.party_members)
 	else:
 		push_warning("DNA 로드 실패, 기본값 사용")
-		GameManager.current_location = "cheongmok_village"
+		GameManager.current_location = "bluewood_village"
 		GameManager.party_members = ["sanzang"]
 	
 	# LocationScreen 시작

@@ -7,6 +7,15 @@ extends RefCounted
 # 개별 위치 파일에서 데이터를 로드
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# 위치 스크립트 preload
+const BluewoodVillage := preload("res://scripts/res/registry/locations/bluewood_village.gd")
+const ElementalSlope := preload("res://scripts/res/registry/locations/elemental_slope.gd")
+const Shrine := preload("res://scripts/res/registry/locations/shrine.gd")
+const SealStone := preload("res://scripts/res/registry/locations/seal_stone.gd")
+const ForestEntrance := preload("res://scripts/res/registry/locations/forest_entrance.gd")
+const ForestDeep := preload("res://scripts/res/registry/locations/forest_deep.gd")
+const DonglimTemple := preload("res://scripts/res/registry/locations/donglim_temple.gd")
+
 # 위치 데이터 맵
 var _locations: Dictionary = {}
 
@@ -24,9 +33,13 @@ func _init() -> void:
 
 func _register_all_locations() -> void:
 	# Part 1: 오행봉의 봉인
-	_register_location(CheongmokVillage)
-	_register_location(MountainEntrance)
-	_register_location(MountainMid)
+	_register_location(BluewoodVillage)
+	_register_location(ElementalSlope)
+	# _register_location(PlumAltar)
+	# _register_location(MonkeySeal)
+	# _register_location(LanternForest)
+	
+	# 기존 위치 (추후 정리)
 	_register_location(Shrine)
 	_register_location(SealStone)
 	_register_location(ForestEntrance)

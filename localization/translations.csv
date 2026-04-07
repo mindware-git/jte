@@ -27,6 +27,10 @@ ACT1_PROLOGUE_019,"이왕 풀어놨으니, 책임은 져야지.","Since you've f
 ACT1_PROLOGUE_020,"이렇게 삼장과 손오공의 여정이 시작된다.","Thus begins the journey of Sanzang and Sun Wukong.","こうして三蔵と孫悟空の旅が始まる。","就这样，三藏和孙悟空的旅程开始了。"
 UI_TOUCH_HINT,"터치하여 빠르게 진행","Touch to speed up","タッチで早く進む","触摸以加速"
 UI_TOUCH_START,"터치하여 시작하기","Touch to start","タッチで始める","触摸开始"
+LOC_BLUEWOOD_VILLAGE,청목진,Bluewood Village,青木鎮,青木镇
+LOC_BLUEWOOD_VILLAGE_DESC,"작은 마을이 조용히 서 있다. 밤마다 이상한 소문이 돈다.","A small village sits quietly. Strange rumors circulate every night.","小さな村が静かに佇んでいる。夜な夜な奇妙な噂が流れる。","小村庄静静地坐落着。每晚都有奇怪的传闻流传。"
+LOC_ELEMENTAL_SLOPE,오행산 중턱,Elemental Peak Slope,五行山 中腹,五行山山腰
+LOC_ELEMENTAL_SLOPE_DESC,"산길이 험해진다. 바위귀신이 길을 막고 있다.","The mountain path becomes steep. A rock spirit blocks the way.","山道が険しくなる。岩鬼が道を塞いでいる。","山路变得陡峭。岩鬼挡住了去路。"
 LOC_CHEONGMOK,청목진,Cheongmok Village,青木鎮,青木镇
 LOC_CHEONGMOK_DESC,"작은 마을이 조용히 서 있다.","A small village sits quietly.","小さな村が静かに佇んでいる。","小村庄静静地坐落着。"
 LOC_MOUNTAIN_ENTRANCE,산길입구,Mountain Entrance,山道入口,山道入口
@@ -44,6 +48,12 @@ LOC_FOREST_DEEP_DESC,"등롱이 희미하게 빛나는 숲의 깊은 곳.","Deep
 INTERACT_TAVERN,주점,Tavern,酒場,酒馆
 INTERACT_GENERAL_STORE,잡화상,General Store,雑貨屋,杂货店
 INTERACT_WELL,우물,Well,井戸,水井
+INTERACT_ROCK_SPIRIT,바위귀신,Rock Spirit,岩鬼,岩鬼
+INTERACT_DEAD_TREE,죽은 나무,Dead Tree,枯れ木,枯木
+INTERACT_CLEARED_PATH,뚫린 길,Cleared Path,開かれた道,开通的道路
+INTERACT_HIDDEN_PATH,숨은 길,Hidden Path,隠された道,隐藏的道路
+INTERACT_BATTLE_ROCK_SPIRIT,바위귀신과 전투,Battle Rock Spirit,岩鬼と戦う,与岩鬼战斗
+ENEMY_ROCK_DEMON,바위귀신,Rock Demon,岩鬼,岩鬼
 INTERACT_ROCK_DEMON,바위귀신,Rock Demon,岩鬼,岩鬼
 INTERACT_SHRINE,오색제단,Five Colors Altar,五色祭壇,五色祭坛
 INTERACT_SEAL,봉인,Seal,封印,封印

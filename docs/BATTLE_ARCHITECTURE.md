@@ -25,6 +25,221 @@
 
 ---
 
+## 파일 구조
+
+### 씬 파일
+
+```
+scenes/
+├── battle/
+│   ├── battle.tscn         # 메인 전투 씬 (Node2D)
+│   └── battle.gd           # 전투 로직 (동적 UI 생성)
+├── dev/
+│   └── dev_battle.tscn     # 개발용 테스트 씬
+└── locations/
+    └── *.tscn              # 타일맵 배경들 (동적 로드)
+```
+
+### 스크립트 파일
+
+```
+scripts/
+├── entities/
+│   ├── character.gd        # 기본 캐릭터 (Node2D)
+│   ├── battle_character.gd # 전투 캐릭터 (Character 상속)
+│   └── battle_grid.gd      # 그리드 시스템 (Node2D)
+├── managers/
+│   └── enemy_ai.gd         # 적 AI (전략 + 행동 분리)
+└── res/
+    ├── battle_data.gd      # 전투 데이터 구조 (Unit, BattleAction 등)
+    ├── skill_data.gd       # 스킬 데이터
+    ├── item_data.gd        # 아이템 데이터
+    ├── character_data.gd   # 캐릭터 데이터
+    └── registry/
+        ├── skill_registry.gd   # 스킬 레지스트리
+        ├── item_registry.gd    # 아이템 레지스트리
+        └── character_registry.gd # 캐릭터 레지스트리
+```
+
+### 씬 구조
+
+`battle.tscn`은 최소한의 노드만 가진다:
+
+```
+Battle (Node2D)
+└── battle.gd
+    # 모든 UI는 동적 생성
+    # 타일맵 배경은 _load_tilemap_background()로 로드
+```
+
+---
+
+## 클래스 구조
+
+### 상속 다이어그램
+
+```
+RefCounted
+├── BattleData
+│   ├── Unit          # 전투 유닛 (아군/적 공통)
+│   ├── BattleCell    # 전장 칸
+│   └── BattleAction  # 행동 데이터
+├── SkillData         # 스킬 데이터
+├── ItemData          # 아이템 데이터
+├── CharacterData     # 캐릭터 데이터
+└── *Registry         # 레지스트리들
+
+Node2D
+├── Character         # 기본 캐릭터 (탐험/전투 공통)
+│   └── BattleCharacter  # 전투 전용 캐릭터
+└── BattleGrid        # 그리드 시스템
+```
+
+### BattleData.Unit 구조
+
+아군과 적이 동일한 구조를 사용한다:
+
+```gdscript
+class Unit:
+	var id: String
+	var display_name: String
+	var side: Side  # ALLY 또는 ENEMY
+	
+	# 스탯
+	var max_hp, hp: int
+	var max_mp, mp: int
+	var max_sg, sg: int  # SG: 스킬 게이지
+	var attack, defense, speed: int
+	var move_range: int
+	
+	# 위치
+	var grid_pos: Vector2i
+	
+	# 스킬
+	var skills: Array[String]  # 스킬 ID 목록
+	var attack_range: Array[Vector2i]
+```
+
+### SkillData 구조
+
+```gdscript
+class SkillData:
+	var id, name, description: String
+	var type: SkillType  # ATTACK, HEAL, BUFF, DEBUFF
+	var element: SkillElement  # NONE, FIRE, WATER, WIND, EARTH
+	
+	# 비용
+	var mp_cost: int
+	var sg_cost: int
+	
+	# 범위
+	var range_type: SkillRangeType  # SINGLE, CROSS_1, SQUARE_3x3, LINE_3
+	
+	# 효과
+	var damage_multiplier: float
+	var heal_amount: int
+	var buff_type, buff_value, buff_duration
+```
+
+---
+
+## 레지스트리 시스템
+
+### 개요
+
+모든 데이터(스킬, 아이템, 캐릴러터)는 레지스트리에서 관리한다.
+
+### 구조
+
+```gdscript
+class SkillRegistry:
+	var _skills: Dictionary  # {skill_id: SkillData}
+	
+	func get_skill(id: String) -> SkillData
+	func get_all_skills() -> Array[SkillData]
+```
+
+### 사용 예시
+
+```gdscript
+# battle.gd에서
+var _skill_registry = SkillRegistry.new()
+var skill = _skill_registry.get_skill("flame_slash")
+
+# 적도 동일하게 사용
+for skill_id in enemy.skills:
+	var skill = _skill_registry.get_skill(skill_id)
+	if enemy.mp >= skill.mp_cost:
+		# 스킬 사용 가능
+```
+
+### 장점
+
+- 데이터와 로직 분리
+- 아군/적 동일한 방식으로 스킬 사용
+- 확장 용이 (새 스킬 추가가 쉬움)
+
+---
+
+## AI 아키텍처
+
+### 원칙
+
+- **아군/적 동일 구조**: 적도 `Unit`을 사용하며, `skills` 배열에 스킬 ID를 가진다.
+- **전략과 행동 분리**: 전략은 무엇을 할지, 행동은 어떻게 할지 결정한다.
+- **레지스트리 재사용**: 적의 스킬도 `SkillRegistry`에서 조회한다.
+
+### 구조
+
+```
+EnemyAI
+├── 전략 (Strategy)
+│   ├── AGGRESSIVE   # 공격적: HP가 낮은 적 우선
+│   ├── DEFENSIVE    # 방어적: 거리 유지
+│   └── BALANCED     # 균형: 상황에 따라
+│
+└── 세부 행동 (Action)
+    ├── MOVE    # 이동: 공격 범위 확보
+    ├── ATTACK  # 일반 공격
+    └── SKILL   # 스킬 사용
+```
+
+### 데이터 흐름
+
+```
+EnemyAI.decide_action(enemy, battle_data, skill_registry)
+    │
+    ├── 1. 공격 범위 내 타겟 확인
+    │       └── BattleGrid 활용
+    │
+    ├── 2. 스킬 사용 가능 확인
+    │       └── enemy.skills → SkillRegistry → MP/SG 체크
+    │
+    └── 3. 행동 결정
+            ├── 타겟 있음 → 공격 또는 스킬
+            └── 타겟 없음 → 이동 (접근)
+```
+
+### 반환 형식
+
+```gdscript
+# 반환: Dictionary
+{
+    "type": "MOVE" | "ATTACK" | "SKILL",
+    "target": Unit,           # 공격/스킬 대상
+    "position": Vector2i,     # 이동 위치
+    "skill": SkillData        # 사용 스킬
+}
+```
+
+### 확장 포인트
+
+- 전략 선택 로직 (현재: 무작위 → 추후: 상황 기반)
+- 행동 우선순위 (현재: 기본 → 추후: 캐릭터별)
+- 보스 패턴 (특수 행동 추가 가능)
+
+---
+
 ## 전투의 기본 흐름
 
 전투 흐름은 아래처럼 잡는다.

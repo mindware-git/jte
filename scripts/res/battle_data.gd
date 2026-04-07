@@ -18,11 +18,11 @@ enum Side {
 
 ## 행동 타입
 enum ActionType {
+	MOVE,     # 이동
 	ATTACK,   # 일반 공격
 	SKILL,    # 스킬
 	ITEM,     # 아이템
-	DEFEND,   # 방어
-	FLEE      # 도주
+	END_TURN,   # 턴 종료
 }
 
 ## 상태이상
@@ -51,12 +51,15 @@ class Unit:
 	var hp: int = 100
 	var max_mp: int = 50
 	var mp: int = 50
+	var max_sg: int = 50
+	var sg: int = 50
 	var attack: int = 10
 	var defense: int = 5
 	var speed: int = 10
+	var move_range: int = 2  # 이동 가능 칸 수
 	
-	# 위치 (칸)
-	var cell_index: int = 0
+	# 위치 (그리드 좌표)
+	var grid_pos: Vector2i = Vector2i(0, 0)
 	
 	# 상태이상
 	var status: BattleData.Status = BattleData.Status.NONE
@@ -69,10 +72,16 @@ class Unit:
 	# 스킬 목록
 	var skills: Array[String] = []
 	
+	# 공격 범위 (상대 좌표 배열)
+	var attack_range: Array[Vector2i] = []
+	
 	func _init(p_id: String, p_name: String, p_side: BattleData.Side) -> void:
 		id = p_id
 		display_name = p_name
 		side = p_side
+		
+		# 기본 공격 범위 설정 (인접한 4칸)
+		attack_range = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
 	
 	func take_damage(amount: int) -> int:
 		var actual := maxi(1, amount - defense)
@@ -89,6 +98,16 @@ class Unit:
 	
 	func is_enemy() -> bool:
 		return side == BattleData.Side.ENEMY
+	
+	# 현재 위치를 기준으로 공격 가능한 칸들 반환
+	func get_attackable_cells() -> Array[Vector2i]:
+		var attackable_cells: Array[Vector2i] = []
+		for offset in attack_range:
+			var cell_pos := grid_pos + offset
+			# 전장 범위 체크 (임시로 0~15, 0~15로 가정)
+			if cell_pos.x >= 0 and cell_pos.x < 16 and cell_pos.y >= 0 and cell_pos.y < 16:
+				attackable_cells.append(cell_pos)
+		return attackable_cells
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -173,31 +192,13 @@ func setup(p_battle_id: String, p_allies: Array[Unit], p_enemies: Array[Unit]) -
 func _setup_grid() -> void:
 	cells.clear()
 	
-	# 아군 칸 (3칸)
-	for i in range(3):
-		var cell := BattleCell.new()
-		cell.index = i
-		cell.side = BattleData.Side.ALLY
-		cell.column = i
-		cells.append(cell)
-		
-		# 아군 배치
-		if i < allies.size():
-			cell.occupant = allies[i]
-			allies[i].cell_index = i
+	# 아군 배치 (그리드 좌표)
+	for i in range(allies.size()):
+		allies[i].grid_pos = Vector2i(3 + i, 6)  # (3,6), (4,6), (5,6)
 	
-	# 적군 칸 (3칸)
-	for i in range(3):
-		var cell := BattleCell.new()
-		cell.index = 3 + i
-		cell.side = BattleData.Side.ENEMY
-		cell.column = i
-		cells.append(cell)
-		
-		# 적군 배치
-		if i < enemies.size():
-			cell.occupant = enemies[i]
-			enemies[i].cell_index = 3 + i
+	# 적군 배치 (그리드 좌표)
+	for i in range(enemies.size()):
+		enemies[i].grid_pos = Vector2i(12 + i, 6)  # (12,6), (13,6), (14,6)
 
 
 ## 턴 큐 설정 (속도 기반)
@@ -269,8 +270,6 @@ func execute_action(action: BattleAction) -> void:
 			_execute_attack(action)
 		BattleData.ActionType.SKILL:
 			_execute_skill(action)
-		BattleData.ActionType.DEFEND:
-			_execute_defend(action)
 
 
 ## 일반 공격 실행
@@ -299,9 +298,3 @@ func _execute_skill(action: BattleAction) -> void:
 		action.actor.display_name,
 		action.skill_id
 	])
-
-
-## 방어 실행
-func _execute_defend(action: BattleAction) -> void:
-	# TODO: 방어 시 데미지 감소
-	battle_log.append("%s이(가) 방어 태세!" % action.actor.display_name)

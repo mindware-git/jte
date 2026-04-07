@@ -20,6 +20,7 @@ var _name_label: Label
 var _desc_label: Label
 var _interact_container: VBoxContainer
 var _travel_container: VBoxContainer
+var _tilemap_instance: Node2D = null
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Lifecycle
@@ -60,15 +61,45 @@ func get_location_name() -> String:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Tilemap Background
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _load_tilemap_background() -> void:
+	# 기존 타일맵 제거
+	if _tilemap_instance:
+		_tilemap_instance.queue_free()
+		_tilemap_instance = null
+	
+	# 타일맵 씬 경로 생성
+	var scene_path := "res://scenes/locations/%s.tscn" % location_id
+	
+	# 씬 존재 확인 후 로드
+	if ResourceLoader.exists(scene_path):
+		var scene_resource := load(scene_path)
+		if scene_resource and scene_resource is PackedScene:
+			_tilemap_instance = scene_resource.instantiate()
+			add_child(_tilemap_instance)
+			# 타일맵을 UI 뒤로 이동
+			move_child(_tilemap_instance, 0)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # UI Creation
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _create_ui() -> void:
-	# 배경
+	# 타일맵 배경 로드 (우선)
+	_load_tilemap_background()
+	
+	# 기본 배경 (타일맵이 없을 경우)
 	var bg := ColorRect.new()
 	bg.color = Color(0.02, 0.02, 0.05)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+	
+	# 타일맵이 있으면 배경을 반투명으로
+	if _tilemap_instance:
+		bg.color = Color(0.02, 0.02, 0.05, 0.3)
 	
 	# 메인 컨테이너
 	var main_container := VBoxContainer.new()
@@ -208,6 +239,11 @@ func _on_travel_pressed(target_location_id: String) -> void:
 	# 위치 이동
 	location_id = target_location_id
 	_load_location()
+	
+	# 타일맵 배경 갱신
+	_load_tilemap_background()
+	
+	# UI 갱신
 	_refresh_ui()
 	
 	# 게임 상태 업데이트
@@ -289,9 +325,31 @@ func _on_story_interaction(interact: InteractionData) -> void:
 
 
 func _on_battle_interaction(interact: InteractionData) -> void:
-	# BattleScreen으로 전환
-	var battle_screen := BattleScreen.new(interact.target_id)
-	transition_requested.emit(battle_screen)
+	# Battle 씬 로드
+	var battle_scene := preload("res://scenes/battle/battle.tscn")
+	var battle := battle_scene.instantiate()
+	
+	# RNA 가져오기
+	var rna: Dictionary = GameManager.to_rna()
+	
+	# 전투 설정
+	battle.setup_battle(location_id, interact.target_id, rna)
+	battle.battle_finished.connect(_on_battle_finished)
+	
+	# 전투 씬으로 전환
+	transition_requested.emit(battle)
+
+
+func _on_battle_finished(victory: bool) -> void:
+	# 전투 결과 처리
+	if victory:
+		print("전투 승리!")
+	else:
+		print("전투 패배...")
+	
+	# LocationScreen으로 복귀 (새로 생성)
+	var location_screen := LocationScreen.new(location_id)
+	transition_requested.emit(location_screen)
 
 
 func _on_puzzle_interaction(interact: InteractionData) -> void:

@@ -21,6 +21,13 @@ enum SkillElement {
 	EARTH        ## 흙
 }
 
+enum SkillRangeType {
+	SINGLE,      ## 단일 타겟
+	CROSS_1,     ## 십자 1칸
+	SQUARE_3x3,  ## 3x3 정방형
+	LINE_3,      ## 라인 3칸
+}
+
 var id: String = ""
 var name: String = ""
 var description: String = ""
@@ -32,6 +39,10 @@ var unlock_level: int = 1
 
 # 비용
 var mp_cost: int = 10
+var sg_cost: int = 0
+
+# 범위
+var range_type: SkillRangeType = SkillRangeType.SINGLE
 
 # 효과
 var damage_multiplier: float = 1.0  # 기본 공격력 배수

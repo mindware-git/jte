@@ -1,4 +1,4 @@
-class_name CheongmokVillage
+class_name BluewoodVillage
 extends RefCounted
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -7,15 +7,15 @@ extends RefCounted
 # Part 1 시작점
 # ═══════════════════════════════════════════════════════════════════════════════
 
-const LOCATION_ID := "cheongmok_village"
+const LOCATION_ID := "bluewood_village"
 
 
 static func get_location_data() -> LocationData:
 	return LocationData.create(
 		LOCATION_ID,
-		"LOC_CHEONGMOK",
-		"LOC_CHEONGMOK_DESC",
-		["mountain_entrance"],
+		"LOC_BLUEWOOD_VILLAGE",
+		"LOC_BLUEWOOD_VILLAGE_DESC",
+		["elemental_slope"],
 		["tavern", "general_store", "well"]
 	)
 

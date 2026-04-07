@@ -16,16 +16,16 @@ func before_each() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func test_has_location() -> void:
-	assert_true(_registry.has_location("cheongmok_village"), "청목진이 존재해야 함")
-	assert_true(_registry.has_location("mountain_entrance"), "산길입구가 존재해야 함")
+	assert_true(_registry.has_location("bluewood_village"), "청목진이 존재해야 함")
+	assert_true(_registry.has_location("elemental_slope"), "오행산 중턱이 존재해야 함")
 	assert_false(_registry.has_location("nonexistent"), "존재하지 않는 위치는 false")
 
 
 func test_get_location() -> void:
-	var loc: LocationData = _registry.get_location("cheongmok_village")
+	var loc: LocationData = _registry.get_location("bluewood_village")
 	assert_not_null(loc, "청목진 데이터가 있어야 함")
-	assert_eq(loc.id, "cheongmok_village", "ID가 올바라야 함")
-	assert_eq(loc.name_key, "LOC_CHEONGMOK", "이름 키가 올바라야 함")
+	assert_eq(loc.id, "bluewood_village", "ID가 올바라야 함")
+	assert_eq(loc.name_key, "LOC_BLUEWOOD_VILLAGE", "이름 키가 올바라야 함")
 
 
 func test_get_location_returns_null_for_nonexistent() -> void:
@@ -35,8 +35,8 @@ func test_get_location_returns_null_for_nonexistent() -> void:
 
 func test_get_all_location_ids() -> void:
 	var ids: Array[String] = _registry.get_all_location_ids()
-	assert_true(ids.size() >= 7, "최소 7개 위치가 있어야 함")
-	assert_true("cheongmok_village" in ids, "청목진이 목록에 있어야 함")
+	assert_true(ids.size() >= 2, "최소 2개 위치가 있어야 함")
+	assert_true("bluewood_village" in ids, "청목진이 목록에 있어야 함")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -44,22 +44,22 @@ func test_get_all_location_ids() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func test_get_connections() -> void:
-	var connections: Array[String] = _registry.get_connections("cheongmok_village")
+	var connections: Array[String] = _registry.get_connections("bluewood_village")
 	assert_eq(connections.size(), 1, "청목진에서 이동 가능한 곳은 1개")
-	assert_true("mountain_entrance" in connections, "산길입구로 이동 가능해야 함")
+	assert_true("elemental_slope" in connections, "오행산 중턱으로 이동 가능해야 함")
 
 
 func test_get_connections_multiple() -> void:
-	var connections: Array[String] = _registry.get_connections("mountain_entrance")
-	assert_eq(connections.size(), 2, "산길입구에서 이동 가능한 곳은 2개")
-	assert_true("cheongmok_village" in connections, "청목진으로 이동 가능")
-	assert_true("mountain_mid" in connections, "산길중턱으로 이동 가능")
+	var connections: Array[String] = _registry.get_connections("elemental_slope")
+	assert_eq(connections.size(), 2, "오행산 중턱에서 이동 가능한 곳은 2개")
+	assert_true("bluewood_village" in connections, "청목진으로 이동 가능")
+	assert_true("plum_altar" in connections, "매화 제단으로 이동 가능 (아직 구현 안됨)")
 
 
 func test_can_travel() -> void:
-	assert_true(_registry.can_travel("cheongmok_village", "mountain_entrance"), "청목진→산길입구 이동 가능")
-	assert_true(_registry.can_travel("mountain_entrance", "cheongmok_village"), "산길입구→청목진 이동 가능")
-	assert_false(_registry.can_travel("cheongmok_village", "forest_deep"), "청목진→연등숲심부 직접 이동 불가")
+	assert_true(_registry.can_travel("bluewood_village", "elemental_slope"), "청목진→오행산중턱 이동 가능")
+	assert_true(_registry.can_travel("elemental_slope", "bluewood_village"), "오행산중턱→청목진 이동 가능")
+	assert_false(_registry.can_travel("bluewood_village", "forest_deep"), "청목진→연등숲심부 직접 이동 불가")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -80,7 +80,7 @@ func test_get_interaction() -> void:
 
 
 func test_get_interactions_for_location() -> void:
-	var interactions: Array[InteractionData] = _registry.get_interactions("cheongmok_village")
+	var interactions: Array[InteractionData] = _registry.get_interactions("bluewood_village")
 	assert_eq(interactions.size(), 3, "청목진에 3개 상호작용")
 	
 	var ids: Array[String] = []
