@@ -37,17 +37,25 @@ var _turn_label: Label
 var _log_label: Label
 var _action_menu: VBoxContainer
 var _battle_grid: BattleGrid = null
-var _move_confirm_dialog: Control = null
-var _attack_confirm_dialog: Control = null
+var _confirm_dialog: Control = null
+var _confirm_label: Label = null
+var _confirm_action_callback: Callable = Callable()
 var _item_menu: VBoxContainer = null
 var _skill_menu: VBoxContainer = null
+var _cancel_action_btn: Button = null
 
 # 선택 상태
 var _selected_actor: BattleData.Unit = null
 var _selected_action: BattleData.ActionType = BattleData.ActionType.ATTACK
 var _selected_target: BattleData.Unit = null
 var _selected_skill_id: String = ""
+var _selected_item_id: String = ""
 var _is_player_turn: bool = true
+
+# 범위 색상 상수
+const RANGE_COLOR_MOVE := Color(0.3, 0.7, 1.0, 0.3)    # 파란색 (이동)
+const RANGE_COLOR_ATTACK := Color(1.0, 0.3, 0.3, 0.3)   # 빨간색 (공격/적 대상)
+const RANGE_COLOR_ALLY := Color(0.3, 1.0, 0.5, 0.3)     # 녹색 (아군 대상)
 
 # 배치 좌표 (64x64 그리드 기준)
 const ALLY_START_POS := Vector2(192, 384)   # 그리드 (3, 6)
@@ -145,17 +153,55 @@ func _create_ui() -> void:
 	# 행동 메뉴 (초기엔 숨김)
 	_create_action_menu()
 	
-	# 이동 확인 다이얼로그 생성
-	_create_move_confirm_dialog()
-	
-	# 공격 확인 다이얼로그 생성
-	_create_attack_confirm_dialog()
+	# 범용 확인 다이얼로그 생성
+	_create_confirm_dialog()
 	
 	# 아이템 메뉴 생성
 	_create_item_menu()
 	
 	# 스킬 메뉴 생성
 	_create_skill_menu()
+
+	# 선택 취소 버튼 생성
+	_create_cancel_action_button()
+
+func _create_cancel_action_button() -> void:
+	_cancel_action_btn = Button.new()
+	_cancel_action_btn.text = "✖ 선택 취소"
+	_cancel_action_btn.custom_minimum_size = Vector2(140, 50)
+	_cancel_action_btn.position = Vector2(850, 600)
+	_cancel_action_btn.visible = false
+	_cancel_action_btn.add_theme_font_size_override("font_size", 20)
+	_cancel_action_btn.pressed.connect(_on_cancel_action_pressed)
+	# 호버 스타일 등 추가 가능하지만 기본으로 둠
+	add_child(_cancel_action_btn)
+
+func _show_cancel_action_button() -> void:
+	if _cancel_action_btn:
+		_cancel_action_btn.visible = true
+		move_child(_cancel_action_btn, get_child_count() - 1)
+
+func _hide_cancel_action_button() -> void:
+	if _cancel_action_btn:
+		_cancel_action_btn.visible = false
+
+func _on_cancel_action_pressed() -> void:
+	_hide_battle_grid()
+	_hide_confirm_dialog()
+	_hide_skill_menu()
+	_hide_item_menu()
+	_hide_cancel_action_button()
+	
+	_selected_target = null
+	_selected_item_id = ""
+	_selected_skill_id = ""
+	
+	if _selected_actor:
+		_log_label.text = "행동을 선택하세요."
+		if _character_nodes.has(_selected_actor.id):
+			_show_action_menu(_character_nodes[_selected_actor.id])
+		else:
+			_action_menu.visible = true
 
 
 func _create_action_menu() -> void:
@@ -207,81 +253,45 @@ func _hide_action_menu() -> void:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Move Confirm Dialog
+# Unified Confirm Dialog (범용 확인 다이얼로그)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-func _create_move_confirm_dialog() -> void:
-	_move_confirm_dialog = Control.new()
-	_move_confirm_dialog.visible = false
-	add_child(_move_confirm_dialog)
+func _create_confirm_dialog() -> void:
+	_confirm_dialog = Control.new()
+	_confirm_dialog.visible = false
+	add_child(_confirm_dialog)
 	
 	# 배경
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(200, 100)
-	_move_confirm_dialog.add_child(panel)
+	panel.custom_minimum_size = Vector2(220, 100)
+	_confirm_dialog.add_child(panel)
 	
 	var vbox := VBoxContainer.new()
 	panel.add_child(vbox)
 	
-	# 안내 문구
-	var label := Label.new()
-	label.text = "이동하시겠습니까?"
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(label)
+	# 안내 문구 (동적으로 변경)
+	_confirm_label = Label.new()
+	_confirm_label.text = "확인하시겠습니까?"
+	_confirm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(_confirm_label)
 	
 	# 버튼 컨테이너
 	var btn_container := HBoxContainer.new()
+	btn_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(btn_container)
 	
 	# 확인 버튼
 	var confirm_btn := Button.new()
-	confirm_btn.text = "이동"
-	confirm_btn.pressed.connect(_on_move_confirmed)
+	confirm_btn.text = "확인"
+	confirm_btn.custom_minimum_size = Vector2(80, 36)
+	confirm_btn.pressed.connect(_on_confirm_accepted)
 	btn_container.add_child(confirm_btn)
 	
 	# 취소 버튼
 	var cancel_btn := Button.new()
 	cancel_btn.text = "취소"
-	cancel_btn.pressed.connect(_on_move_cancelled)
-	btn_container.add_child(cancel_btn)
-
-
-# Attack Confirm Dialog
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func _create_attack_confirm_dialog() -> void:
-	_attack_confirm_dialog = Control.new()
-	_attack_confirm_dialog.visible = false
-	add_child(_attack_confirm_dialog)
-	
-	# 배경
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(200, 100)
-	_attack_confirm_dialog.add_child(panel)
-	
-	var vbox := VBoxContainer.new()
-	panel.add_child(vbox)
-	
-	# 안내 문구
-	var label := Label.new()
-	label.text = "공격하시겠습니까?"
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(label)
-	
-	# 버튼 컨테이너
-	var btn_container := HBoxContainer.new()
-	vbox.add_child(btn_container)
-	
-	# 확인 버튼
-	var confirm_btn := Button.new()
-	confirm_btn.text = "공격"
-	confirm_btn.pressed.connect(_on_attack_confirmed)
-	btn_container.add_child(confirm_btn)
-	
-	# 취소 버튼
-	var cancel_btn := Button.new()
-	cancel_btn.text = "취소"
-	cancel_btn.pressed.connect(_on_attack_cancelled)
+	cancel_btn.custom_minimum_size = Vector2(80, 36)
+	cancel_btn.pressed.connect(_on_confirm_cancelled)
 	btn_container.add_child(cancel_btn)
 
 
@@ -311,7 +321,7 @@ func _create_item_menu() -> void:
 	var cancel_btn := Button.new()
 	cancel_btn.text = "✖ 취소"
 	cancel_btn.custom_minimum_size = Vector2(120, 40)
-	cancel_btn.pressed.connect(_hide_item_menu)
+	cancel_btn.pressed.connect(_on_cancel_action_pressed)
 	vbox.add_child(cancel_btn)
 
 
@@ -364,7 +374,7 @@ func _create_skill_menu() -> void:
 	var cancel_btn := Button.new()
 	cancel_btn.text = "✖ 취소"
 	cancel_btn.custom_minimum_size = Vector2(140, 40)
-	cancel_btn.pressed.connect(_hide_skill_menu)
+	cancel_btn.pressed.connect(_on_cancel_action_pressed)
 	vbox.add_child(cancel_btn)
 
 
@@ -391,7 +401,7 @@ func _on_skill_selected(skill_id: String) -> void:
 		_hide_skill_menu()
 		return
 	
-	# MP/SG 체크
+	# MP/SG 체크 (차감은 확정 후)
 	if _selected_actor.mp < skill.mp_cost:
 		_log_label.text = "MP가 부족합니다! (필요: %d, 보유: %d)" % [skill.mp_cost, _selected_actor.mp]
 		_hide_skill_menu()
@@ -402,10 +412,7 @@ func _on_skill_selected(skill_id: String) -> void:
 		_hide_skill_menu()
 		return
 	
-	# 스킬 비용 차감
-	_selected_actor.mp -= skill.mp_cost
-	_selected_actor.sg -= skill.sg_cost
-	
+	# MP/SG는 확정 후 차감 (취소 시 보존)
 	_hide_skill_menu()
 	
 	# 스킬 범위 표시
@@ -422,6 +429,27 @@ func _show_skill_range(skill_id: String) -> void:
 		return
 	
 	# 스킬 범위 패턴 생성
+	var range_pattern: Array[Vector2i] = _get_skill_range_pattern(skill)
+	
+	# 점유 칸 및 색상 결정
+	var occupied: Array[Vector2i] = []
+	var range_color := RANGE_COLOR_ATTACK
+	
+	if skill.type == SkillData.SkillType.HEAL or skill.type == SkillData.SkillType.BUFF:
+		# 치유/버프 스킬은 녹색, 아군 위치만 유효
+		range_color = RANGE_COLOR_ALLY
+	else:
+		# 공격/디버프 스킬은 빨간색
+		range_color = RANGE_COLOR_ATTACK
+	
+	_show_range_cells(_selected_actor.grid_pos, range_pattern, occupied, range_color)
+	
+	# 선택된 스킬 ID 저장 (그리드 클릭 시 사용)
+	_selected_skill_id = skill_id
+	_selected_action = BattleData.ActionType.SKILL
+
+
+func _get_skill_range_pattern(skill: SkillData) -> Array[Vector2i]:
 	var range_pattern: Array[Vector2i] = []
 	match skill.range_type:
 		SkillData.SkillRangeType.SINGLE:
@@ -438,99 +466,233 @@ func _show_skill_range(skill_id: String) -> void:
 					range_pattern.append(Vector2i(dx, dy))
 		SkillData.SkillRangeType.LINE_3:
 			range_pattern = [Vector2i(0, -1), Vector2i(0, 0), Vector2i(0, 1)]
-	
-	# 점유된 칸 (공격 스킬은 빈 배열로 전달)
-	var occupied: Array[Vector2i] = []
-	if skill.type == SkillData.SkillType.HEAL:
-		# 치유 스킬은 아군만 제외
-		for ally in _battle_data.allies:
-			if not ally.is_dead:
-				occupied.append(ally.grid_pos)
-	
-	_show_range_cells(_selected_actor.grid_pos, range_pattern, occupied)
-	
-	# 선택된 스킬 ID 저장 (그리드 클릭 시 사용)
-	_selected_skill_id = skill_id
-	_selected_action = BattleData.ActionType.SKILL
+	return range_pattern
 
 
 func _on_item_selected(item_id: String) -> void:
 	if _selected_actor == null:
 		return
 	
-	_hide_item_menu()
-	
-	# 아이템 사용 효과 적용
-	match item_id:
-		"potion":
-			_selected_actor.heal(50)
-			_log_label.text = "%s이(가) 포션을 사용하여 50 HP를 회복했습니다!" % _selected_actor.display_name
-		"ether":
-			_selected_actor.mp = mini(_selected_actor.max_mp, _selected_actor.mp + 30)
-			_log_label.text = "%s이(가) 에테르를 사용하여 30 MP를 회복했습니다!" % _selected_actor.display_name
-		"antidote":
-			_selected_actor.status = BattleData.Status.NONE
-			_selected_actor.status_turns = 0
-			_log_label.text = "%s이(가) 해독제를 사용하여 상태이상을 해제했습니다!" % _selected_actor.display_name
-		_:
-			_log_label.text = "알 수 없는 아이템입니다."
-	
-	# 턴 종료
-	_selected_actor = null
-	_battle_data.next_turn()
-	_render_units()
-	
-	if _battle_data.check_battle_end():
-		_end_battle()
+	var item := _item_registry.get_item(item_id)
+	if not item:
+		_log_label.text = "아이템을 찾을 수 없습니다."
+		_hide_item_menu()
 		return
 	
-	_update_turn_display()
-
-
-func _show_move_confirm_dialog(grid_pos: Vector2i) -> void:
-	var pixel_pos := _battle_grid.grid_to_pixel(grid_pos)
-	_move_confirm_dialog.position = pixel_pos + Vector2(64, 64)
-	_move_confirm_dialog.visible = true
-	move_child(_move_confirm_dialog, get_child_count() - 1)
-
-
-func _show_attack_confirm_dialog(target_unit: BattleData.Unit) -> void:
-	_selected_target = target_unit
-	var pixel_pos := _battle_grid.grid_to_pixel(target_unit.grid_pos)
-	_attack_confirm_dialog.position = pixel_pos + Vector2(64, 64)
-	_attack_confirm_dialog.visible = true
-	move_child(_attack_confirm_dialog, get_child_count() - 1)
-
-
-func _hide_attack_confirm_dialog() -> void:
-	_attack_confirm_dialog.visible = false
-	_selected_target = null
-
-
-func _hide_move_confirm_dialog() -> void:
-	_move_confirm_dialog.visible = false
-
-
-func _on_move_confirmed() -> void:
-	_hide_move_confirm_dialog()
+	_hide_item_menu()
+	_selected_item_id = item_id
+	_selected_action = BattleData.ActionType.ITEM
 	
+	# target_type에 따라 분기
+	match item.target_type:
+		ItemData.ItemTargetType.SELF:
+			# 자기 자신 대상: 칸 선택 없이 바로 확인
+			_selected_target = _selected_actor
+			_show_confirm_dialog(
+				"%s 사용?" % item.name,
+				_selected_actor.grid_pos,
+				_on_item_confirmed
+			)
+		ItemData.ItemTargetType.ALLY:
+			# 아군 대상: 아군 위치 칸 범위 표시
+			_log_label.text = "대상 아군을 선택하세요."
+			_show_item_range_ally()
+		ItemData.ItemTargetType.ENEMY:
+			# 적 대상: 적 위치 칸 범위 표시
+			_log_label.text = "대상 적을 선택하세요."
+			_show_item_range_enemy(item)
+		ItemData.ItemTargetType.ALL_ALLY:
+			# 전체 아군: 바로 확인
+			_selected_target = _selected_actor
+			_show_confirm_dialog(
+				"%s을(를) 전체 아군에게 사용?" % item.name,
+				_selected_actor.grid_pos,
+				_on_item_confirmed
+			)
+
+
+func _show_item_range_ally() -> void:
 	if _selected_actor == null:
 		return
 	
-	var target_pos := _battle_grid.get_selected_cell()
+	# 아군 위치만 하이라이트 (맨해튼 거리 내)
+	var item := _item_registry.get_item(_selected_item_id)
+	if not item:
+		return
+	
+	var range_pattern: Array[Vector2i] = []
+	for x in range(-item.use_range, item.use_range + 1):
+		for y in range(-item.use_range, item.use_range + 1):
+			if abs(x) + abs(y) <= item.use_range:
+				range_pattern.append(Vector2i(x, y))
+	
+	# 점유되지 않은 칸은 제외 (아군이 있는 칸만 유효)
+	_show_range_cells(_selected_actor.grid_pos, range_pattern, [], RANGE_COLOR_ALLY)
+
+
+func _show_item_range_enemy(item: ItemData) -> void:
+	if _selected_actor == null:
+		return
+	
+	var range_pattern: Array[Vector2i] = []
+	for x in range(-item.use_range, item.use_range + 1):
+		for y in range(-item.use_range, item.use_range + 1):
+			if abs(x) + abs(y) <= item.use_range:
+				range_pattern.append(Vector2i(x, y))
+	
+	_show_range_cells(_selected_actor.grid_pos, range_pattern, [], RANGE_COLOR_ATTACK)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Unified Confirm Dialog Actions
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _show_confirm_dialog(message: String, grid_pos: Vector2i, callback: Callable) -> void:
+	if _confirm_dialog == null:
+		return
+	
+	_confirm_label.text = message
+	_confirm_action_callback = callback
+	
+	var pixel_pos := Vector2(grid_pos.x * 64, grid_pos.y * 64)
+	if _battle_grid:
+		pixel_pos = _battle_grid.grid_to_pixel(grid_pos)
+	_confirm_dialog.position = pixel_pos + Vector2(64, -20)
+	_confirm_dialog.visible = true
+	move_child(_confirm_dialog, get_child_count() - 1)
+
+
+func _hide_confirm_dialog() -> void:
+	if _confirm_dialog:
+		_confirm_dialog.visible = false
+	_confirm_action_callback = Callable()
+
+
+func _on_confirm_accepted() -> void:
+	var callback := _confirm_action_callback
+	_hide_confirm_dialog()
+	
+	if callback.is_valid():
+		callback.call()
+
+
+func _on_confirm_cancelled() -> void:
+	_hide_confirm_dialog()
+	# 그리드는 끄지 않음. 
+	# 사용자가 대상을 다시 선택할 수 있도록 유지.
+	_selected_target = null
+	
+	if not is_instance_valid(_battle_grid) or not _battle_grid.visible:
+		# 그리드가 없었다면 (예: 자기 자신 대상 아이템 등) 액션 메뉴로 돌아감
+		_on_cancel_action_pressed()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Confirm Callbacks (이동 / 공격 / 스킬 / 아이템)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _on_move_confirmed() -> void:
+	if _selected_actor == null:
+		return
+	
+	var target_pos := _battle_grid.get_selected_cell() if _battle_grid else Vector2i(-1, -1)
+	if target_pos == Vector2i(-1, -1):
+		return
+	
 	_selected_actor.grid_pos = target_pos
 	
 	# 캐릭터 위치 업데이트
 	if _character_nodes.has(_selected_actor.id):
 		var char_node: BattleCharacter = _character_nodes[_selected_actor.id]
-		char_node.position = _battle_grid.grid_to_pixel(target_pos)
+		char_node.position = _battle_grid.grid_to_pixel(target_pos) if _battle_grid else Vector2(target_pos.x * 64, target_pos.y * 64)
 	
 	# 그리드 제거
 	_hide_battle_grid()
 	_log_label.text = "%s이(가) 이동했다!" % _selected_actor.display_name
 	
 	# 턴 종료
+	_end_player_action()
+
+
+func _on_attack_confirmed() -> void:
+	if _selected_actor == null or _selected_target == null:
+		return
+	
+	_hide_battle_grid()
+	
+	# 실제 공격 실행
+	_execute_action(_selected_target)
+
+
+func _on_skill_confirmed() -> void:
+	if _selected_actor == null or _selected_target == null:
+		return
+	
+	var skill := _skill_registry.get_skill(_selected_skill_id)
+	if not skill:
+		return
+	
+	# MP/SG 확정 후 차감
+	_selected_actor.mp -= skill.mp_cost
+	_selected_actor.sg -= skill.sg_cost
+	
+	_hide_battle_grid()
+	_execute_skill_action(skill, _selected_target)
+
+
+func _on_item_confirmed() -> void:
+	if _selected_actor == null:
+		return
+	
+	var item := _item_registry.get_item(_selected_item_id)
+	if not item:
+		return
+	
+	_hide_battle_grid()
+	
+	# 아이템 효과 적용
+	var target := _selected_target if _selected_target else _selected_actor
+	_execute_item_effect(item, target)
+
+
+func _execute_item_effect(item: ItemData, target: BattleData.Unit) -> void:
+	match item.id:
+		"potion":
+			target.heal(50)
+			_log_label.text = "%s이(가) %s에게 포션을 사용! 50 HP 회복!" % [_selected_actor.display_name, target.display_name]
+		"ether":
+			target.mp = mini(target.max_mp, target.mp + 30)
+			_log_label.text = "%s이(가) %s에게 에테르를 사용! 30 MP 회복!" % [_selected_actor.display_name, target.display_name]
+		"antidote":
+			target.status = BattleData.Status.NONE
+			target.status_turns = 0
+			_log_label.text = "%s이(가) %s에게 해독제를 사용! 상태이상 해제!" % [_selected_actor.display_name, target.display_name]
+		"fire_bomb":
+			var damage := 40
+			var actual := target.take_damage(damage)
+			_log_label.text = "%s이(가) 화염탄을 투척! %s에게 %d 데미지!" % [_selected_actor.display_name, target.display_name, actual]
+			if target.is_dead:
+				_log_label.text += " %s이(가) 쓰러졌다!" % target.display_name
+		"smoke_ball":
+			_log_label.text = "%s이(가) 연막탄을 사용! 회피율 상승!" % _selected_actor.display_name
+		_:
+			_log_label.text = "%s이(가) %s을(를) 사용했다!" % [_selected_actor.display_name, item.name]
+	
+	# 턴 종료
+	_end_player_action()
+
+
+## 플레이어 행동 후 공통 처리
+func _end_player_action() -> void:
 	_selected_actor = null
+	_selected_target = null
+	_selected_skill_id = ""
+	_selected_item_id = ""
+	_selected_action = BattleData.ActionType.ATTACK
+	_hide_action_menu()
+	_hide_cancel_action_button()
+	_hide_battle_grid()
+	
 	_battle_data.next_turn()
 	_render_units()
 	
@@ -541,30 +703,22 @@ func _on_move_confirmed() -> void:
 	_update_turn_display()
 
 
-func _on_move_cancelled() -> void:
-	_hide_move_confirm_dialog()
-	_hide_battle_grid()
-
-
-func _on_attack_confirmed() -> void:
-	_hide_attack_confirm_dialog()
-	_hide_battle_grid()
-	
-	if _selected_actor == null or _selected_target == null:
-		return
-	
-	# 실제 공격 실행
-	_execute_action(_selected_target)
-	
-	# 상태 초기화
-	_selected_actor = null
-	_selected_target = null
-	_selected_action = BattleData.ActionType.ATTACK
-
-
-func _on_attack_cancelled() -> void:
-	_hide_attack_confirm_dialog()
-	_hide_battle_grid()
+## 칸에서 유닛 찾기 (아군/적 구분)
+func _find_unit_at(grid_pos: Vector2i, search_side: String) -> BattleData.Unit:
+	if search_side == "ally":
+		for ally in _battle_data.allies:
+			if ally.grid_pos == grid_pos and not ally.is_dead:
+				return ally
+	elif search_side == "enemy":
+		for enemy in _battle_data.enemies:
+			if enemy.grid_pos == grid_pos and not enemy.is_dead:
+				return enemy
+	else:
+		# 양쪽 다 검색
+		for unit in _battle_data.allies + _battle_data.enemies:
+			if unit.grid_pos == grid_pos and not unit.is_dead:
+				return unit
+	return null
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -572,54 +726,73 @@ func _on_attack_cancelled() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _on_grid_cell_clicked(grid_pos: Vector2i) -> void:
+	if not _battle_grid or not _battle_grid.is_movable_cell(grid_pos):
+		return
+	
+	_battle_grid.select_cell(grid_pos)
+	
 	match _selected_action:
 		BattleData.ActionType.MOVE:
-			if _battle_grid.is_movable_cell(grid_pos):
-				_battle_grid.select_cell(grid_pos)
-				_show_move_confirm_dialog(grid_pos)
+			_show_confirm_dialog(
+				"이동하시겠습니까?",
+				grid_pos,
+				_on_move_confirmed
+			)
+		
 		BattleData.ActionType.ATTACK:
-			# 클릭된 칸에 있는 적을 찾음
-			var target_unit: BattleData.Unit = null
-			for enemy in _battle_data.enemies:
-				if enemy.grid_pos == grid_pos and not enemy.is_dead:
-					target_unit = enemy
-					break
-			
+			var target_unit := _find_unit_at(grid_pos, "enemy")
 			if target_unit != null:
-				_battle_grid.select_cell(grid_pos)
-				_show_attack_confirm_dialog(target_unit)
+				_selected_target = target_unit
+				_show_confirm_dialog(
+					"%s을(를) 공격?" % target_unit.display_name,
+					grid_pos,
+					_on_attack_confirmed
+				)
+		
 		BattleData.ActionType.SKILL:
-			# 스킬 실행
 			var skill := _skill_registry.get_skill(_selected_skill_id)
 			if not skill:
 				return
 			
-			var target_unit: BattleData.Unit = null
+			# 타겟 찾기 (스킬 타입에 따라)
+			var search_side := "enemy"
+			if skill.type == SkillData.SkillType.HEAL or skill.type == SkillData.SkillType.BUFF:
+				search_side = "ally"
+			elif skill.type == SkillData.SkillType.DEBUFF:
+				search_side = "enemy"
 			
-			# 타겟 찾기 (공격 스킬은 적, 치유 스킬은 아군)
-			if skill.type == SkillData.SkillType.ATTACK:
-				for enemy in _battle_data.enemies:
-					if enemy.grid_pos == grid_pos and not enemy.is_dead:
-						target_unit = enemy
-						break
-			elif skill.type == SkillData.SkillType.HEAL:
-				for ally in _battle_data.allies:
-					if ally.grid_pos == grid_pos and not ally.is_dead:
-						target_unit = ally
-						break
-			else:
-				# 버프/디버프는 첫 번째 발견한 유닛 사용
-				for unit in _battle_data.allies + _battle_data.enemies:
-					if unit.grid_pos == grid_pos and not unit.is_dead:
-						target_unit = unit
-						break
-			
+			var target_unit := _find_unit_at(grid_pos, search_side)
 			if target_unit != null:
-				_hide_battle_grid()
-				_execute_skill_action(skill, target_unit)
+				_selected_target = target_unit
+				_show_confirm_dialog(
+					"%s에게 %s 사용?" % [target_unit.display_name, skill.name],
+					grid_pos,
+					_on_skill_confirmed
+				)
+		
+		BattleData.ActionType.ITEM:
+			var item := _item_registry.get_item(_selected_item_id)
+			if not item:
+				return
+			
+			# 타겟 찾기 (아이템 타입에 따라)
+			var search_side := "any"
+			if item.target_type == ItemData.ItemTargetType.ALLY:
+				search_side = "ally"
+			elif item.target_type == ItemData.ItemTargetType.ENEMY:
+				search_side = "enemy"
+			
+			var target_unit := _find_unit_at(grid_pos, search_side)
+			if target_unit != null:
+				_selected_target = target_unit
+				_show_confirm_dialog(
+					"%s에게 %s 사용?" % [target_unit.display_name, item.name],
+					grid_pos,
+					_on_item_confirmed
+				)
 
 
-func _show_range_cells(center: Vector2i, range_pattern: Array[Vector2i], occupied: Array[Vector2i] = []) -> void:
+func _show_range_cells(center: Vector2i, range_pattern: Array[Vector2i], occupied: Array[Vector2i] = [], color: Color = Color(1, 0.5, 0.5, 0.3)) -> void:
 	if _selected_actor == null:
 		return
 	
@@ -630,7 +803,9 @@ func _show_range_cells(center: Vector2i, range_pattern: Array[Vector2i], occupie
 		_battle_grid.cell_clicked.connect(_on_grid_cell_clicked)
 		await get_tree().process_frame  # _ready() 완료 대기
 	
-	_battle_grid.show_range_cells(center, range_pattern, occupied)
+	_battle_grid.visible = true
+	_battle_grid.show_range_cells(center, range_pattern, occupied, color)
+	_show_cancel_action_button()
 
 
 func _show_movable_cells() -> void:
@@ -653,7 +828,7 @@ func _show_movable_cells() -> void:
 			if abs(x) + abs(y) <= _selected_actor.move_range and (x != 0 or y != 0):
 				move_range_pattern.append(Vector2i(x, y))
 	
-	_show_range_cells(_selected_actor.grid_pos, move_range_pattern, occupied)
+	_show_range_cells(_selected_actor.grid_pos, move_range_pattern, occupied, RANGE_COLOR_MOVE)
 
 
 func _hide_battle_grid() -> void:
@@ -851,7 +1026,8 @@ func _on_action_menu_selected(action_type: BattleData.ActionType) -> void:
 			_log_label.text = "이동할 칸을 선택하세요."
 			_show_movable_cells()
 		BattleData.ActionType.ITEM:
-			_hide_action_menu()
+			# _selected_actor 유지해야 함!
+			_action_menu.visible = false  # 메뉴만 숨김
 			_log_label.text = "사용할 아이템을 선택하세요."
 			_show_item_menu()
 		BattleData.ActionType.END_TURN:
@@ -873,7 +1049,7 @@ func _show_attackable_cells() -> void:
 		return
 	
 	# 공격 범위: 점유된 칸도 모두 표시 (적군도 선택 가능하도록)
-	_show_range_cells(_selected_actor.grid_pos, _selected_actor.attack_range, [])
+	_show_range_cells(_selected_actor.grid_pos, _selected_actor.attack_range, [], RANGE_COLOR_ATTACK)
 
 
 func _highlight_enemies() -> void:
@@ -909,20 +1085,8 @@ func _execute_action(target: BattleData.Unit) -> void:
 	_battle_data.execute_action(action)
 	_log_label.text = _battle_data.battle_log[-1] if _battle_data.battle_log.size() > 0 else ""
 	
-	# 상태 초기화
-	_selected_actor = null
-	_selected_action = BattleData.ActionType.ATTACK
-	_hide_action_menu()
-	
-	_battle_data.next_turn()
-	_render_units()
-	
-	# 전투 종료 체크
-	if _battle_data.check_battle_end():
-		_end_battle()
-		return
-	
-	_update_turn_display()
+	# 턴 종료
+	_end_player_action()
 
 
 func _process_enemy_turn() -> void:
@@ -1140,20 +1304,8 @@ func _execute_skill_action(skill: SkillData, target_unit: BattleData.Unit) -> vo
 			]
 			# TODO: 디버프 시스템 구현 필요
 	
-	# 상태 초기화
-	_selected_actor = null
-	_selected_skill_id = ""
-	_selected_action = BattleData.ActionType.ATTACK
-	
-	_battle_data.next_turn()
-	_render_units()
-	
-	# 전투 종료 체크
-	if _battle_data.check_battle_end():
-		_end_battle()
-		return
-	
-	_update_turn_display()
+	# 턴 종료
+	_end_player_action()
 
 
 func _get_buff_display_name(buff_type: String) -> String:

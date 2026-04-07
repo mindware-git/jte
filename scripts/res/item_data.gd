@@ -21,6 +21,13 @@ enum ItemRarity {
 	LEGENDARY    ## 전설
 }
 
+enum ItemTargetType {
+	SELF,        ## 자기 자신
+	ALLY,        ## 아군 대상
+	ENEMY,       ## 적 대상
+	ALL_ALLY,    ## 전체 아군
+}
+
 var id: String = ""
 var name: String = ""
 var description: String = ""
@@ -34,6 +41,10 @@ var stat_bonus: Dictionary = {}  # { "attack": 5, "hp": 10, "mp": 5 }
 
 # 아이콘 (나중에 리소스 경로)
 var icon_path: String = ""
+
+# 전투 사용 대상
+var target_type: ItemTargetType = ItemTargetType.SELF
+var use_range: int = 0  # 0이면 자기 자신, 양수면 맨해튼 사거리
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Serialization

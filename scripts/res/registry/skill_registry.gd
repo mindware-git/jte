@@ -118,6 +118,7 @@ func _create_buff_skill(
 	p_desc: String,
 	p_unlock: int,
 	p_mp: int,
+	p_sg: int,
 	p_buff_type: String,
 	p_buff_value: int,
 	p_duration: int
@@ -130,6 +131,7 @@ func _create_buff_skill(
 	skill.element = SkillData.SkillElement.WIND
 	skill.unlock_level = p_unlock
 	skill.mp_cost = p_mp
+	skill.sg_cost = p_sg
 	skill.buff_type = p_buff_type
 	skill.buff_value = p_buff_value
 	skill.buff_duration = p_duration
@@ -142,6 +144,7 @@ func _create_debuff_skill(
 	p_desc: String,
 	p_unlock: int,
 	p_mp: int,
+	p_sg: int,
 	p_buff_type: String,
 	p_buff_value: int,
 	p_duration: int
@@ -154,6 +157,7 @@ func _create_debuff_skill(
 	skill.element = SkillData.SkillElement.NONE
 	skill.unlock_level = p_unlock
 	skill.mp_cost = p_mp
+	skill.sg_cost = p_sg
 	skill.buff_type = p_buff_type
 	skill.buff_value = p_buff_value
 	skill.buff_duration = p_duration

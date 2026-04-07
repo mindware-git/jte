@@ -89,8 +89,8 @@ func show_movable_cells(from_pos: Vector2i, move_range: int, occupied: Array[Vec
 		_set_cell_color(grid_pos, Color(1, 1, 1, 0.3))  # 흰색 반투명
 
 
-## 범위 칸 표시 (공통 함수)
-func show_range_cells(center: Vector2i, range_pattern: Array[Vector2i], occupied: Array[Vector2i] = []) -> void:
+## 범위 칸 표시 (공통 함수, 색상 지정 가능)
+func show_range_cells(center: Vector2i, range_pattern: Array[Vector2i], occupied: Array[Vector2i] = [], highlight_color: Color = Color(1, 0.5, 0.5, 0.3)) -> void:
 	clear_highlights()
 	
 	_movable_cells.clear()
@@ -114,7 +114,7 @@ func show_range_cells(center: Vector2i, range_pattern: Array[Vector2i], occupied
 			continue
 		
 		_movable_cells.append(grid_pos)
-		_set_cell_color(grid_pos, Color(1, 0.5, 0.5, 0.3))  # 빨간색 반투명 (공격 범위)
+		_set_cell_color(grid_pos, highlight_color)
 
 
 ## 이동 가능한 칸 계산
