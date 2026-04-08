@@ -598,6 +598,9 @@ var current_location: String = "cheongmok_village"
 ## 방문한 위치들
 var visited_locations: Array[String] = []
 
+## 맵(Location)별 로컬 데이터 저장소 (NPC 위치, 상자 열림 여부 등)
+var location_states: Dictionary = {}
+
 ## 파티 멤버
 var party_members: Array[String] = ["sanzang"]
 
@@ -626,6 +629,8 @@ func from_dna(dna: Dictionary) -> void:
 			visited_locations.clear()
 			for loc in world["visited_locations"]:
 				visited_locations.append(loc)
+		if world.has("location_states"):
+			location_states = world["location_states"].duplicate(true)
 	
 	# Party
 	if dna.has("party"):
@@ -680,7 +685,8 @@ func to_dna() -> Dictionary:
 		},
 		"world": {
 			"current_location": current_location,
-			"visited_locations": visited_locations
+			"visited_locations": visited_locations,
+			"location_states": location_states
 		},
 		"party": {
 			"members": party_members,
@@ -714,3 +720,24 @@ func load_dev_dna(file_path: String) -> bool:
 	var dna: Dictionary = json.data
 	from_dna(dna)
 	return true
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Local DNA (Location States) API
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func get_location_state(location_id: String, key: String, default: Variant = null) -> Variant:
+	if not location_states.has(location_id):
+		return default
+	
+	if not location_states[location_id].has(key):
+		return default
+		
+	return location_states[location_id][key]
+
+
+func set_location_state(location_id: String, key: String, value: Variant) -> void:
+	if not location_states.has(location_id):
+		location_states[location_id] = {}
+		
+	location_states[location_id][key] = value
