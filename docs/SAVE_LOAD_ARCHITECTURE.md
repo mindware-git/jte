@@ -607,6 +607,187 @@ RNA는 `플레이 중심`이어야 한다.
 
 ---
 
+## 맵별 로컬 DNA (Local DNA)
+
+### 개요
+
+전역 DNA(GameManager)는 파티, 인벤토리, 퀘스트 등 게임 전체 상태를 관리하지만, **맵별 NPC 위치, 상자 열림 여부, 퍼즐 상태** 같은 로컬 데이터는 별도로 관리한다.
+
+이유:
+- 모든 맵의 NPC 위치를 전역 DNA에 저장하면 데이터 과다
+- 플레이어가 방문하지 않은 맵의 데이터는 불필요
+- 맵 단위로 데이터를 분리하면 메모리 효율 향상
+
+### 저장 구조
+
+#### 개발용 초기 데이터 (읽기 전용)
+```
+asset/saves/
+├── part_1_init.json             # 파트 1 초기 상태 (개발용)
+└── ...                          # 개발/테스트용 참조 데이터
+```
+
+#### 런타임 저장 영역 (실제 앱)
+```
+user://saves/
+├── slot_1/
+│   ├── global.json              # 전역 DNA (GameManager)
+│   └── locations/
+│       ├── bluewood_village.json    # 청목진 로컬 DNA
+│       ├── elemental_slope.json     # 원소사면 로컬 DNA
+│       └── ...                      # 방문한 맵만 생성
+├── slot_2/
+└── auto_save/
+```
+
+> **참고**: `asset/` 경로는 개발 중 참조용 초기 데이터이며, 실제 앱에서는 `user://` 경로에 저장/로드됩니다.
+
+### 로컬 DNA 스키마
+
+```json
+{
+    "location_id": "bluewood_village",
+    "last_visit": "2026-04-08T14:30:00",
+    "player": {
+        "pos": [100, 100],
+        "facing": "down"
+    },
+    "npcs": {
+        "old_man": { "pos": [300, 200], "state": "talked" },
+        "villager_1": { "pos": [350, 180], "state": "idle" }
+    },
+    "chests": {
+        "hidden_chest_1": { "opened": true }
+    },
+    "puzzles": {
+        "well_puzzle": { "solved": false }
+    },
+    "investigated": {
+        "well": true,
+        "hidden_path": false
+    }
+}
+```
+
+### 로컬 DNA 필드 설명
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `location_id` | String | 맵 식별자 |
+| `last_visit` | String | 마지막 방문 시각 (ISO 8601) |
+| `player` | Object | 플레이어 상태 |
+| `player.pos` | [x, y] | 플레이어 현재 위치 |
+| `player.facing` | String | 플레이어 방향 (up, down, left, right) |
+| `npcs` | Object | NPC별 상태 |
+| `npcs.{id}.pos` | [x, y] | NPC 현재 위치 |
+| `npcs.{id}.state` | String | NPC 상태 (idle, talked, quest_given 등) |
+| `chests` | Object | 상자별 열림 여부 |
+| `puzzles` | Object | 퍼즐별 해결 상태 |
+| `investigated` | Object | 조사 포인트별 조사 여부 |
+
+### 생명주기
+
+1. **맵 진입 시**: 로컬 DNA 파일이 있으면 로드, 없으면 빈 상태로 시작
+2. **맵 체류 중**: NPC 위치 변경, 상자 열기 등의 이벤트 발생 시 로컬 DNA 갱신
+3. **맵 이탈 시**: 로컬 DNA 파일 저장
+4. **전역 저장 시**: 현재 맵의 로컬 DNA도 함께 저장
+
+### ExploreScreen 연동
+
+```gdscript
+# ExploreScreen에서 로컬 DNA 사용 예시
+class_name ExploreScreen
+extends Node2D
+
+var _location_id: String
+var _local_dna: Dictionary = {}
+
+func setup(rna: Dictionary) -> void:
+    _location_id = rna.get("current_location", "bluewood_village")
+    
+    # 로컬 DNA 로드
+    _local_dna = LocalDnaManager.load(_location_id)
+    
+    # NPC 스폰: 레지스트리(기본 위치) + 로컬 DNA(현재 위치) 병합
+    _spawn_npcs()
+    
+func _spawn_npcs() -> void:
+    var spawns := LocationRegistry.get_npc_spawns(_location_id)
+    
+    for spawn in spawns:
+        var npc := Actor.new()
+        npc.setup(false, spawn.npc_id)
+        
+        # 로컬 DNA에 위치가 있으면 사용, 없으면 기본 위치
+        if _local_dna.npcs.has(spawn.npc_id):
+            npc.position = Vector2(
+                _local_dna.npcs[spawn.npc_id].pos[0],
+                _local_dna.npcs[spawn.npc_id].pos[1]
+            )
+        else:
+            npc.position = spawn.position
+        
+        add_child(npc)
+
+func _on_leave_location() -> void:
+    # 로컬 DNA 저장
+    _collect_npc_positions()
+    LocalDnaManager.save(_location_id, _local_dna)
+```
+
+### LocalDnaManager 인터페이스
+
+```gdscript
+class_name LocalDnaManager
+extends RefCounted
+
+## 로컬 DNA 로드
+static func load(location_id: String) -> Dictionary:
+    var path := "user://saves/slot_1/locations/%s.json" % location_id
+    if FileAccess.file_exists(path):
+        var file := FileAccess.open(path, FileAccess.READ)
+        var json := JSON.parse_string(file.get_as_text())
+        if json:
+            return json
+    return { "location_id": location_id, "npcs": {}, "chests": {}, "puzzles": {} }
+
+## 로컬 DNA 저장
+static func save(location_id: String, data: Dictionary) -> bool:
+    var dir := DirAccess.open("user://saves/slot_1")
+    if not dir:
+        DirAccess.make_dir_recursive_absolute("user://saves/slot_1/locations")
+    
+    var path := "user://saves/slot_1/locations/%s.json" % location_id
+    var file := FileAccess.open(path, FileAccess.WRITE)
+    if file:
+        file.store_string(JSON.stringify(data, "  "))
+        return true
+    return false
+
+## 특정 맵의 로컬 DNA 삭제 (새 게임 등)
+static func delete(location_id: String) -> void:
+    var path := "user://saves/slot_1/locations/%s.json" % location_id
+    if FileAccess.file_exists(path):
+        DirAccess.remove_absolute(path)
+```
+
+### 전역 DNA vs 로컬 DNA 분리 기준
+
+| 데이터 | 저장 위치 | 이유 |
+|--------|----------|------|
+| 파티 구성, 레벨, 장비 | 전역 DNA | 게임 전체 상태 |
+| 인벤토리, 재화 | 전역 DNA | 게임 전체 상태 |
+| 퀘스트 진행 | 전역 DNA | 게임 전체 상태 |
+| 주요 플래그 | 전역 DNA | 게임 전체 상태 |
+| 현재 맵 ID | 전역 DNA | 맵 로드 기준 |
+| 플레이어 위치 | 로컬 DNA | 맵 단위, 맵 진입 시 복원 |
+| NPC 위치 | 로컬 DNA | 맵 단위, 방문한 맵만 |
+| 상자 열림 여부 | 로컬 DNA | 맵 단위 |
+| 퍼즐 해결 여부 | 로컬 DNA | 맵 단위 |
+| 조사 포인트 | 로컬 DNA | 맵 단위 |
+
+---
+
 ## 동유기에 맞는 권장 결론
 
 동유기의 저장/로드는 아래 모델로 가는 것이 가장 안전하다.
@@ -617,5 +798,6 @@ RNA는 `플레이 중심`이어야 한다.
 - 저장 포맷 `DNA`와 런타임 상태 `RNA`를 명확히 나눈다.
 - 로드는 `DNA -> Migration -> Adapter -> RNA` 순서로만 처리한다.
 - 복귀는 항상 `안전 진입점` 기준으로 한다.
+- **맵별 로컬 DNA를 분리하여 NPC 위치, 상자, 퍼즐 상태를 관리한다.**
 
 이 구조면 스토리, 맵, 파티 구조가 계속 바뀌어도 저장 호환성을 관리하기가 훨씬 쉬워진다.

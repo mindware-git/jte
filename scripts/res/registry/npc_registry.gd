@@ -6,6 +6,11 @@ extends RefCounted
 # NPC/대화 데이터 레지스트리
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# NPC 스크립트 preload
+const OldMonk := preload("res://scripts/res/registry/npcs/old_monk.gd")
+const FlowerSpirit := preload("res://scripts/res/registry/npcs/flower_spirit.gd")
+const OldMan := preload("res://scripts/res/registry/npcs/old_man.gd")
+
 var _npcs: Dictionary = {}
 
 
@@ -21,6 +26,7 @@ func _register_all_npcs() -> void:
 	# Part 1
 	_register_npc(OldMonk)
 	_register_npc(FlowerSpirit)
+	_register_npc(OldMan)
 	# TODO: 더 많은 NPC 추가
 
 

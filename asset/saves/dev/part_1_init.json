@@ -1,0 +1,32 @@
+{
+	"header": {
+		"save_format_version": 1,
+		"app_version": "0.1.0",
+		"content_version": 1
+	},
+	"progress": {
+		"part_id": "part_1",
+		"chapter_id": "act1"
+	},
+	"world": {
+		"current_screen": "explore",
+		"current_location": "bluewood_village",
+		"visited_locations": ["bluewood_village"]
+	},
+	"party": {
+		"members": ["sanzang"],
+		"leader": "sanzang"
+	},
+	"inventory": {
+		"gold": 100,
+		"items": []
+	},
+	"flags": {
+		"prologue_complete": true,
+		"quest_started": false,
+		"quest_complete": false,
+		"forest_unlocked": false,
+		"temple_unlocked": false,
+		"boss_defeated": false
+	}
+}

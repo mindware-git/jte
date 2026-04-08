@@ -22,6 +22,167 @@
 
 ---
 
+## 파일 구조 원칙 (GDScript vs Scene)
+
+### 핵심 원칙
+
+**모든 것은 GDScript로 작성한다.** 씬 파일은 다음 경우에만 사용한다:
+1. 스프라이트, Body2D 등 물리/렌더링 리소스
+2. 맵 타일 (TileMap)
+3. 테스트 씬 (에디터에서 실행용)
+4. main.tscn (진입점)
+
+### GDScript vs Scene 분류
+
+| 타입 | 방식 | 예시 |
+|------|------|------|
+| **화면 컨트롤러** | GDScript `.new()` | LocationScreen, BattleScreen, DialoguePanel |
+| **데이터 클래스** | GDScript | CharacterData, SkillData, ItemData |
+| **매니저** | GDScript | GameManager, EnemyAI |
+| **레지스트리** | GDScript | SkillRegistry, ItemRegistry |
+| **캐릭터 리소스** | Scene `.instantiate()` | Actor (CharacterBody2D + AnimatedSprite2D) |
+| **맵 리소스** | Scene `.instantiate()` | locations/*.tscn (TileMap) |
+| **진입점** | Scene | main.tscn, part_1.tscn |
+| **테스트** | Scene | dev/*.tscn |
+
+### 아키텍처 다이어그램
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           GDScript (모든 로직)                               │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                         진입점 (Scene)                               │    │
+│  │  main.tscn ── main.gd                                                │    │
+│  │  part_1.tscn ── part_1.gd                                            │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                    │                                         │
+│                                    ▼                                         │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                      화면 컨트롤러 (GDScript)                         │    │
+│  │                                                                      │    │
+│  │  LocationScreen.new(id) ── BattleScreen.new()                        │    │
+│  │         │                       │                                    │    │
+│  │         │                       ▼                                    │    │
+│  │         │              Actor.tscn.instantiate()                      │    │
+│  │         │              locations/*.tscn.instantiate()                │    │
+│  │         │                                                            │    │
+│  └─────────┼────────────────────────────────────────────────────────────┘    │
+│            │                                                                 │
+│            ▼                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                         데이터/매니저 (GDScript)                      │    │
+│  │                                                                      │    │
+│  │  CharacterData, SkillData, ItemData                                  │    │
+│  │  GameManager, EnemyAI                                                │    │
+│  │  SkillRegistry, ItemRegistry, LocationRegistry                       │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Scene (리소스만)                                     │
+│                                                                              │
+│  scenes/entities/actor.tscn        ← CharacterBody2D + AnimatedSprite2D     │
+│  scenes/locations/*.tscn           ← TileMap (맵 타일)                      │
+│  scenes/prd/main.tscn              ← 진입점                                 │
+│  scenes/dev/*.tscn                 ← 테스트 씬                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 전환 흐름 상세
+
+#### 1. A맵 → B맵 이동
+```
+LocationScreen.new("bluewood_village")
+    │
+    ├── Actor.tscn instantiate()
+    ├── locations/bluewood_village.tscn instantiate()
+    │
+    ▼
+이동 버튼 클릭
+    │
+    ▼
+transition_requested.emit(LocationScreen.new("forest_entrance"))
+    │
+    ▼
+part_1.gd: _on_transition()
+    │
+    ▼
+LocationScreen.new("forest_entrance")
+    │
+    ├── Actor.tscn instantiate()
+    └── locations/forest_entrance.tscn instantiate()
+```
+
+#### 2. A맵 → 전투 → A맵
+```
+LocationScreen.new("bluewood_village")
+    │
+    ▼
+전투 상호작용 클릭
+    │
+    ▼
+_on_battle_interaction()
+    │
+    ▼
+transition_requested.emit(Battle.instantiate())
+    │
+    ▼
+part_1.gd: _on_transition()
+    │
+    ▼
+Battle.tscn 실행
+    │
+    ▼
+battle_finished.emit(victory)
+    │
+    ▼
+_on_battle_finished()
+    │
+    ▼
+transition_requested.emit(LocationScreen.new("bluewood_village"))
+```
+
+#### 3. A맵 → 애니메이션 → A맵
+```
+LocationScreen.new("bluewood_village")
+    │
+    ▼
+스토리 상호작용 클릭
+    │
+    ▼
+_on_story_interaction()
+    │
+    ▼
+transition_requested.emit(AnimationScreen.new("cutscene_01"))
+    │
+    ▼
+part_1.gd: _on_transition()
+    │
+    ▼
+AnimationScreen
+    │
+    ├── animation/cutscene_01.tscn instantiate()
+    │
+    ▼
+animation_finished.emit()
+    │
+    ▼
+transition_requested.emit(LocationScreen.new("bluewood_village"))
+```
+
+### 전환 타입 요약
+
+| 전환 | 로직 (GDScript) | 콘텐츠 (Scene) |
+|------|-----------------|----------------|
+| 맵 이동 | LocationScreen.new(id) | locations/{id}.tscn, Actor.tscn |
+| 전투 | BattleScreen.new() | locations/{id}.tscn (배경) |
+| 애니메이션 | AnimationScreen.new(id) | - |
+| 대화 | DialoguePanel.new(id) | - (오버레이) |
+| 상점 | ShopPanel.new(id) | - (오버레이) |
+
+---
+
 ## 설계 원칙
 
 - `콘텐츠`와 `런타임 로직`은 분리한다.
@@ -148,6 +309,441 @@
 - 저사양 연출 옵션
 - Android/iOS별 수명주기 대응
 - 언어 설정 반영
+
+
+---
+
+## Screen 타입 분류
+
+화면 전체가 전환되는 단위를 Screen이라고 한다.
+
+### Screen 목록 (7개)
+
+| Screen | 용도 | 전환 시점 |
+|--------|------|-----------|
+| **BootScreen** | 초기화/로딩 | 게임 시작 |
+| **TitleScreen** | 타이틀/메뉴 | Boot 완료 후 |
+| **SelectScreen** | 월드맵 이동, 시나리오 분기 | 이동/분기 시 |
+| **AnimationScreen** | 컷신/연출 | 스토리 진행 |
+| **ExploreScreen** | 탐험 | 메인 게임플레이 |
+| **BattleScreen** | 전투 | 전투 진입 시 |
+| **EndingScreen** | 엔딩/크레딧 | 게임 클리어 |
+
+### 게임 흐름
+
+```
+BootScreen → TitleScreen → SelectScreen → AnimationScreen → ExploreScreen
+                  ↑              │                              │
+                  │              └──────────────────────────────┘
+                  │                                             │
+                  │              ┌──────────────────────────────┘
+                  │              ↓
+                  └────── EndingScreen ← AnimationScreen
+                              
+                              ┌──────────────────────────────┐
+                              │                              │
+                         ExploreScreen ←──────────→ BattleScreen
+                              │                              │
+                              └──────────────────────────────┘
+```
+
+### Screen 전환 매커니즘 (SOLID 기반)
+
+**핵심 원칙: 화면 간 서로 몰라야 한다.**
+
+- main.gd만 화면 전환 책임
+- 각 Screen은 RNA만 수정하고 `finished` 신호
+- main은 RNA를 보고 적절한 Screen 생성
+
+#### GameManager vs SaveManager 책임 분리
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     GameManager (AutoLoad)                  │
+│                                                             │
+│  책임: RNA 자료 구조 보관 및 관리                            │
+│                                                             │
+│  - current_screen: String = "title"  # 현재 화면            │
+│  - current_location, enemy_id, cutscene_id                  │
+│  - from_battle, victory                                     │
+│  - party_members, coin, flags                               │
+│                                                             │
+│  메서드:                                                     │
+│  - to_rna() -> Dictionary   # RNA 반환                      │
+│  - reset_rna()              # RNA 초기화 (새 게임)           │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                     SaveManager (AutoLoad)                  │
+│                                                             │
+│  책임: RNA ↔ DNA 변환 및 파일 저장/로드                      │
+│                                                             │
+│  메서드:                                                     │
+│  - save(slot_id)            # RNA → DNA → 파일 저장         │
+│  - load(slot_id)            # 파일 → DNA → RNA 복원         │
+│  - from_dna(dna)            # DNA → RNA 변환                │
+│  - to_dna()                 # RNA → DNA 변환                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### RNA 초기값
+
+```gdscript
+# game_manager.gd
+var current_screen: String = "title"  # 앱 시작 시 기본값
+```
+
+#### 새로 시작하기 vs 이어하기
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      TitleScreen                            │
+│                                                             │
+│  [새로 시작하기]                                            │
+│      │                                                      │
+│      ├── GameManager.reset_rna()                            │
+│      │   └── current_screen = "animation"                   │
+│      │   └── current_location = "opening_location"          │
+│      │   └── party_members = ["sanzang"]                    │
+│      │   └── coin = 0, flags 초기화                         │
+│      │                                                      │
+│      └── finished.emit()                                    │
+│          → main: _create_screen()                           │
+│          → AnimationScreen.new() (오프닝 컷신)               │
+│                                                             │
+│  [이어하기]                                                  │
+│      │                                                      │
+│      ├── SaveManager.load(slot_id)                          │
+│      │   └── DNA 파일 로드                                  │
+│      │   └── GameManager.from_dna(dna)                      │
+│      │       └── RNA 복원                                   │
+│      │       └── current_screen = "explore" (저장 시점)     │
+│      │                                                      │
+│      └── finished.emit()                                    │
+│          → main: _create_screen()                           │
+│          → ExploreScreen.new() (저장 위치)                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 새로 시작하기 상세
+
+```gdscript
+# TitleScreen
+func _on_new_game_pressed() -> void:
+    GameManager.reset_rna()
+    finished.emit()
+
+# GameManager
+func reset_rna() -> void:
+    current_screen = "animation"
+    current_location = "opening_location"
+    cutscene_id = "part_1_opening"
+    party_members = ["sanzang"]
+    coin = 0
+    _flags = {}
+    from_battle = false
+    victory = false
+```
+
+#### 이어하기 상세
+
+```gdscript
+# TitleScreen
+func _on_continue_pressed(slot_id: int) -> void:
+    SaveManager.load(slot_id)
+    finished.emit()
+
+# SaveManager
+func load(slot_id: int) -> bool:
+    var dna := _load_dna_file(slot_id)
+    if dna.is_empty():
+        return false
+    GameManager.from_dna(dna)
+    return true
+
+# GameManager
+func from_dna(dna: Dictionary) -> void:
+    current_screen = dna.get("current_screen", "explore")
+    current_location = dna.get("current_location", "bluewood_village")
+    # ... 기타 필드 복원
+```
+
+#### main.gd 흐름
+
+```gdscript
+# main.gd
+func _ready() -> void:
+    # GameManager는 AutoLoad로 이미 초기화됨
+    # RNA 초기값: current_screen = "title"
+    _create_screen()
+
+func _create_screen() -> void:
+    var screen: BaseScreen
+    
+    match GameManager.current_screen:
+        "title":
+            screen = TitleScreen.new()
+        "animation":
+            screen = AnimationScreen.new()
+        "explore":
+            screen = ExploreScreen.new()
+        "battle":
+            screen = BattleScreen.new()
+        "select":
+            screen = SelectScreen.new()
+        "ending":
+            screen = EndingScreen.new()
+        _:
+            push_error("Unknown screen: " + GameManager.current_screen)
+            return
+    
+    screen.setup(GameManager.to_rna())
+    screen.finished.connect(_on_screen_finished)
+    add_child(screen)
+
+func _on_screen_finished() -> void:
+    for child in get_children():
+        child.queue_free()
+    _create_screen()
+```
+
+#### RNA (런타임 상태)
+
+```gdscript
+# scripts/res/rna.gd
+class_name RNA
+
+var current_screen: String = "explore"  # 현재 화면 타입
+var location_id: String = ""             # 현재 위치
+var enemy_id: String = ""                # 전투 적 ID
+var cutscene_id: String = ""             # 컷신 ID
+var from_battle: bool = false            # 전투에서 복귀 여부
+var victory: bool = false                # 전투 승리 여부
+```
+
+#### Screen 인터페이스
+
+```gdscript
+# 모든 Screen의 기본 구조
+class_name BaseScreen
+extends Control
+
+signal finished()  # 화면 종료 신호
+
+var rna: RNA  # main으로부터 주입
+
+## RNA 기반 초기화
+func setup(p_rna: RNA) -> void:
+    rna = p_rna
+```
+
+#### main.gd (컨트롤러)
+
+```gdscript
+# main.gd 또는 part_1.gd
+extends Node2D
+
+var rna: RNA
+
+func _ready() -> void:
+    # DNA 로드 후 RNA 생성
+    rna = GameManager.to_rna()
+    _create_screen()
+
+func _create_screen() -> void:
+    # RNA 기반 Screen 생성
+    var screen: BaseScreen
+    
+    match rna.current_screen:
+        "explore":
+            screen = ExploreScreen.new()
+        "battle":
+            screen = BattleScreen.new()
+        "animation":
+            screen = AnimationScreen.new()
+        _:
+            push_error("Unknown screen: " + rna.current_screen)
+            return
+    
+    screen.setup(rna)
+    screen.finished.connect(_on_screen_finished)
+    add_child(screen)
+
+func _on_screen_finished() -> void:
+    # 현재 화면 제거
+    for child in get_children():
+        child.queue_free()
+    
+    # RNA 기반 새 화면 생성
+    _create_screen()
+```
+
+#### Screen 예시 (ExploreScreen)
+
+```gdscript
+# ExploreScreen.gd
+class_name ExploreScreen
+extends BaseScreen
+
+func _on_battle_interaction(enemy_id: String) -> void:
+    # RNA 수정
+    rna.current_screen = "battle"
+    rna.enemy_id = enemy_id
+    rna.from_battle = false
+    
+    # main에게 "나 끝났어" 신호
+    finished.emit()
+
+func _on_location_change(location_id: String) -> void:
+    rna.current_screen = "explore"
+    rna.location_id = location_id
+    finished.emit()
+```
+
+#### 전환 흐름
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         main.gd                             │
+│                                                             │
+│  RNA: { current_screen: "explore", location_id: "village" } │
+│                           │                                 │
+│                           ▼                                 │
+│          ┌────────────────────────────────┐                │
+│          │       ExploreScreen            │                │
+│          │                                │                │
+│          │  "전투 진입!"                   │                │
+│          │  RNA.current_screen = "battle" │                │
+│          │  RNA.enemy_id = "goblin"       │                │
+│          │  finished.emit() ──────────────┼──┐             │
+│          └────────────────────────────────┘  │             │
+│                                              │             │
+│  main: _on_screen_finished() ◄───────────────┘             │
+│           │                                                 │
+│           ▼                                                 │
+│  RNA: { current_screen: "battle", enemy_id: "goblin" }      │
+│           │                                                 │
+│           ▼                                                 │
+│          ┌────────────────────────────────┐                │
+│          │       BattleScreen             │                │
+│          │                                │                │
+│          │  "전투 종료!"                   │                │
+│          │  RNA.current_screen = "explore"│                │
+│          │  RNA.victory = true            │                │
+│          │  finished.emit() ──────────────┼──┐             │
+│          └────────────────────────────────┘  │             │
+│                                              │             │
+│  main: _on_screen_finished() ◄───────────────┘             │
+│           │                                                 │
+│           ▼                                                 │
+│  RNA: { current_screen: "explore", victory: true }          │
+│           │                                                 │
+│           ▼                                                 │
+│          ┌────────────────────────────────┐                │
+│          │       ExploreScreen            │                │
+│          └────────────────────────────────┘                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Screen 간 전환 매트릭스
+
+| From | To | Trigger | Context |
+|------|-----|---------|---------|
+| BootScreen | TitleScreen | 로딩 완료 | {} |
+| TitleScreen | SelectScreen | 새 게임 | {new_game: true} |
+| TitleScreen | ExploreScreen | 이어하기 | DNA에서 로드 |
+| SelectScreen | AnimationScreen | 선택 완료 | {cutscene_id} |
+| SelectScreen | ExploreScreen | 이동 선택 | {location_id} |
+| AnimationScreen | ExploreScreen | 연출 종료 | {location_id} |
+| ExploreScreen | BattleScreen | 전투 진입 | {enemy_id, location_id} |
+| ExploreScreen | AnimationScreen | 스토리 트리거 | {cutscene_id} |
+| ExploreScreen | SelectScreen | 월드맵 열기 | {} |
+| BattleScreen | ExploreScreen | 전투 종료 | {victory, location_id} |
+| BattleScreen | AnimationScreen | 보스 클리어 | {cutscene_id} |
+| EndingScreen | TitleScreen | 종료 | {} |
+
+### 전환 코드 예시
+
+```gdscript
+# part_1.gd (컨트롤러)
+func _on_transition(next_screen: Node) -> void:
+    # 1. 현재 화면 제거
+    for child in get_children():
+        child.queue_free()
+    
+    # 2. 시그널 연결
+    if next_screen.has_signal("transition_requested"):
+        next_screen.transition_requested.connect(_on_transition)
+    
+    # 3. 새 화면 추가
+    add_child(next_screen)
+
+
+# ExploreScreen → BattleScreen
+func _on_battle_interaction(enemy_id: String) -> void:
+    var battle := BattleScreen.new()
+    battle.setup({
+        location_id = location_id,
+        enemy_id = enemy_id,
+        rna = GameManager.to_rna()
+    })
+    transition_requested.emit(battle)
+
+
+# BattleScreen → ExploreScreen
+func _on_battle_finished(victory: bool) -> void:
+    var explore := ExploreScreen.new()
+    explore.setup({
+        location_id = _location_id,
+        from_battle = true,
+        victory = victory
+    })
+    transition_requested.emit(explore)
+```
+
+### Screen 상세
+
+#### 1. BootScreen
+- 초기화, 리소스 로딩
+- 저장 데이터 확인
+- 자동으로 다음 Screen으로 전환
+
+#### 2. TitleScreen
+- 새 게임 / 이어하기
+- 설정
+- 크레딧
+
+#### 3. SelectScreen
+- 월드맵에서 이동 위치 선택
+- 시나리오 분기 선택 (한국 팀 / 일본 팀)
+- 선택 후 ExploreScreen 또는 AnimationScreen으로 전환
+
+#### 4. AnimationScreen
+- 컷신 자동 진행
+- 탭으로 빠르게 진행
+- 종료 후 ExploreScreen으로 전환
+
+#### 5. ExploreScreen
+- 캐릭터 이동, NPC 대화, 상호작용
+- 전투 진입 시 BattleScreen으로 전환
+- 스토리 트리거 시 AnimationScreen으로 전환
+
+#### 6. BattleScreen
+- 턴제 전투
+- 전투 종료 후 ExploreScreen으로 복귀
+- 보스 클리어 시 AnimationScreen으로 전환 가능
+
+#### 7. EndingScreen
+- 엔딩 크레딧
+- 타이틀로 복귀
+
+### 오버레이 Panel (화면 전환 없음)
+
+| Panel | 용도 |
+|-------|------|
+| DialoguePanel | NPC 대화 |
+| ShopPanel | 상점 |
+| MenuPanel | 인벤토리/설정/파티 |
 
 ---
 

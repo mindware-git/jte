@@ -22,8 +22,8 @@ static func get_location_data() -> LocationData:
 
 static func get_interactions() -> Array[InteractionData]:
 	return [
-		InteractionData.npc("tavern", "INTERACT_TAVERN", "old_man"),
-		InteractionData.shop("general_store", "INTERACT_GENERAL_STORE"),
+		InteractionData.location("tavern", "INTERACT_TAVERN", "tavern"),
+		InteractionData.shop("general_store", "INTERACT_GENERAL_STORE", "general_store"),
 		InteractionData.investigate("well", "INTERACT_WELL"),
 	]
 

@@ -1032,7 +1032,6 @@ func _on_action_menu_selected(action_type: BattleData.ActionType) -> void:
 			_show_item_menu()
 		BattleData.ActionType.END_TURN:
 			_hide_action_menu()
-			_log_label.text = "%s이(가) 턴을 종료했습니다." % _selected_actor.display_name
 			_selected_actor = null
 			_battle_data.next_turn()
 			_render_units()

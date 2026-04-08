@@ -14,7 +14,7 @@ signal clicked(character: Character)
 var _data: CharacterData = null
 
 # 컴포넌트
-var _sprite: Sprite2D = null
+var _animated_sprite: AnimatedSprite2D = null
 var _click_area: Area2D = null
 var _collision_shape: CollisionShape2D = null
 var _name_label: Label = null
@@ -55,20 +55,20 @@ func init(data: CharacterData) -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _setup_sprite() -> void:
-	_sprite = Sprite2D.new()
+	_animated_sprite = AnimatedSprite2D.new()
 	
-	# 텍스처 로드 (캐릭터 ID 기반)
-	var texture_path := _get_texture_path()
-	if ResourceLoader.exists(texture_path):
-		_sprite.texture = load(texture_path)
+	# SpriteFrames 로드
+	var frames_path := "res://asset/sprite/sprite_frames.tres"
+	if ResourceLoader.exists(frames_path):
+		_animated_sprite.sprite_frames = load(frames_path)
+		_animated_sprite.play("default")
 	else:
-		# 기본 텍스처 없으면 색상 박스로 대체
-		_sprite.texture = _create_default_texture()
+		push_warning("SpriteFrames not found: %s" % frames_path)
 	
 	# 중앙 정렬 (하단이 y=0)
-	_sprite.offset = Vector2(0, -SPRITE_SIZE.y / 2)
+	_animated_sprite.offset = Vector2(0, -SPRITE_SIZE.y / 2)
 	
-	add_child(_sprite)
+	add_child(_animated_sprite)
 
 
 func _get_texture_path() -> String:
@@ -140,10 +140,24 @@ func _on_click_area_input(viewport: Node, event: InputEvent, shape_idx: int) -> 
 # Utility
 # ═══════════════════════════════════════════════════════════════════════════════
 
-## 스프라이트 텍스처 설정
-func set_sprite_texture(texture: Texture2D) -> void:
-	if _sprite:
-		_sprite.texture = texture
+## 스프라이트 프레임 설정
+func set_sprite_frames(frames: SpriteFrames) -> void:
+	if _animated_sprite:
+		_animated_sprite.sprite_frames = frames
+		_animated_sprite.play("default")
+
+
+## 애니메이션 재생
+func play_animation(anim_name: String = "default") -> void:
+	if _animated_sprite and _animated_sprite.sprite_frames:
+		if _animated_sprite.sprite_frames.has_animation(anim_name):
+			_animated_sprite.play(anim_name)
+
+
+## 애니메이션 정지
+func stop_animation() -> void:
+	if _animated_sprite:
+		_animated_sprite.stop()
 
 
 ## 클릭 가능 여부 설정

@@ -91,12 +91,21 @@ func _on_boss_pressed() -> void:
 		_show_purchase_required()
 		return
 	
-	# 보스 전투 설정
-	GameManager.set_enemy("악마", 150, 15)
-	var battle := BattleScreen.new()
-	battle.setup(self)
-	battle.set_meta("is_boss", true)
-	transition_requested.emit(battle)
+	# 보스 전투 설정 - battle.tscn 사용
+	var battle_scene := preload("res://scenes/battle/battle.tscn").instantiate()
+	var rna := {
+		"party": GameManager.party_members,
+		"enemies": ["fire_spirit"],  # 보스 적
+		"flags": {"is_boss": true}
+	}
+	battle_scene.setup(rna)
+	battle_scene.battle_finished.connect(_on_battle_finished)
+	add_child(battle_scene)
+
+
+func _on_battle_finished(_victory: bool) -> void:
+	# 전투 종료 후 사원 화면 유지
+	pass
 
 
 func _on_shop_pressed() -> void:

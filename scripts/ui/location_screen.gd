@@ -219,7 +219,7 @@ func _refresh_ui() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _on_interaction_pressed(interact: InteractionData) -> void:
-	# Godot 4 enum: NPC=0, SHOP=1, INVESTIGATE=2, STORY=3, BATTLE=4, PUZZLE=5
+	# Godot 4 enum: NPC=0, SHOP=1, INVESTIGATE=2, STORY=3, BATTLE=4, PUZZLE=5, LOCATION=6
 	match interact.type:
 		0:  # NPC
 			_on_npc_interaction(interact)
@@ -233,6 +233,8 @@ func _on_interaction_pressed(interact: InteractionData) -> void:
 			_on_battle_interaction(interact)
 		5:  # PUZZLE
 			_on_puzzle_interaction(interact)
+		6:  # LOCATION
+			_on_location_interaction(interact)
 
 
 func _on_travel_pressed(target_location_id: String) -> void:
@@ -255,9 +257,17 @@ func _on_travel_pressed(target_location_id: String) -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _on_npc_interaction(interact: InteractionData) -> void:
-	# DialogueScreen으로 전환
-	var dialogue_screen := DialogueScreen.new(interact.target_id)
-	transition_requested.emit(dialogue_screen)
+	# DialoguePanel 오버레이 표시
+	var dialogue_panel := DialoguePanel.new(interact.target_id)
+	dialogue_panel.dialogue_finished.connect(_on_dialogue_finished)
+	add_child(dialogue_panel)
+
+
+func _on_dialogue_finished(result: Dictionary) -> void:
+	# 대화 종료 후 UI 갱신
+	print("대화 종료: ", result)
+	# 필요시 UI 새로고침
+	_refresh_ui()
 
 
 func _show_choice_dialog(message: String, choices: Array[String], callback: Callable) -> void:
@@ -301,8 +311,17 @@ func _show_choice_dialog(message: String, choices: Array[String], callback: Call
 
 
 func _on_shop_interaction(interact: InteractionData) -> void:
-	# TODO: ShopScreen 열기
-	print("상점 상호작용: ", interact.target_id)
+	# ShopPanel 오버레이 표시
+	var shop_id := interact.target_id if interact.target_id != "" else "general_store"
+	var shop_panel := ShopPanel.new(shop_id)
+	shop_panel.closed.connect(_on_shop_closed)
+	add_child(shop_panel)
+
+
+func _on_shop_closed(result: Dictionary) -> void:
+	# 상점 종료 후 처리
+	print("상점 종료: ", result)
+	# result에 items_bought, items_sold 등이 있음
 
 
 func _on_investigate_interaction(interact: InteractionData) -> void:
@@ -325,9 +344,8 @@ func _on_story_interaction(interact: InteractionData) -> void:
 
 
 func _on_battle_interaction(interact: InteractionData) -> void:
-	# Battle 씬 로드
-	var battle_scene := preload("res://scenes/battle/battle.tscn")
-	var battle := battle_scene.instantiate()
+	# BattleScreen 동적 생성
+	var battle := BattleScreen.new()
 	
 	# RNA 가져오기
 	var rna: Dictionary = GameManager.to_rna()
@@ -336,7 +354,7 @@ func _on_battle_interaction(interact: InteractionData) -> void:
 	battle.setup_battle(location_id, interact.target_id, rna)
 	battle.battle_finished.connect(_on_battle_finished)
 	
-	# 전투 씬으로 전환
+	# 전투 화면으로 전환
 	transition_requested.emit(battle)
 
 
@@ -355,3 +373,17 @@ func _on_battle_finished(victory: bool) -> void:
 func _on_puzzle_interaction(interact: InteractionData) -> void:
 	# TODO: PuzzleScreen으로 전환
 	print("퍼즐 상호작용: ", interact.target_id)
+
+
+func _on_location_interaction(interact: InteractionData) -> void:
+	# 특정 건물/위치로 이동 (예: 주점, 잡화상)
+	var target_location := interact.target_id
+	
+	match target_location:
+		"tavern":
+			var tavern_screen := TavernScreen.new()
+			transition_requested.emit(tavern_screen)
+		_:
+			# 기본: 해당 ID의 LocationScreen으로 이동
+			var location_screen := LocationScreen.new(target_location)
+			transition_requested.emit(location_screen)

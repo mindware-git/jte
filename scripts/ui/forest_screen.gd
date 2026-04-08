@@ -111,14 +111,24 @@ func _create_quest_panel() -> void:
 func _on_explore_pressed() -> void:
 	# 50% 확률로 전투 발생
 	if randf() < 0.5:
-		# 전투 시작 - 고블린 설정
-		GameManager.set_enemy("고블린", 50, 8)
-		var battle := BattleScreen.new()
-		battle.setup(self)
-		transition_requested.emit(battle)
+		# 전투 시작 - battle.tscn 사용
+		var battle_scene := preload("res://scenes/battle/battle.tscn").instantiate()
+		var rna := {
+			"party": GameManager.party_members,
+			"enemies": ["rock_demon"],
+			"flags": {}
+		}
+		battle_scene.setup(rna)
+		battle_scene.battle_finished.connect(_on_battle_finished)
+		add_child(battle_scene)
 	else:
 		# 아무 일 없음 - 메시지 표시
 		_show_message("아무 일도 일어나지 않았다.\n계속 탐색할 수 있다.")
+
+
+func _on_battle_finished(_victory: bool) -> void:
+	# 전투 종료 후 숲 화면 유지
+	pass
 
 
 func _show_message(text: String) -> void:

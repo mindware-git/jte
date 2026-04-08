@@ -14,6 +14,7 @@ enum Type {
 	STORY,      # 스토리 이벤트
 	BATTLE,     # 전투
 	PUZZLE,     # 퍼즐
+	LOCATION,   # 다른 위치/건물로 이동
 }
 
 ## 상호작용 ID
@@ -72,3 +73,7 @@ static func battle(p_id: String, p_name_key: String, p_enemy_id: String) -> Inte
 
 static func puzzle(p_id: String, p_name_key: String, p_puzzle_id: String = "") -> InteractionData:
 	return create(p_id, p_name_key, Type.PUZZLE, p_puzzle_id if p_puzzle_id != "" else p_id)
+
+
+static func location(p_id: String, p_name_key: String, p_location_id: String = "") -> InteractionData:
+	return create(p_id, p_name_key, Type.LOCATION, p_location_id if p_location_id != "" else p_id)

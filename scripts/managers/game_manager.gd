@@ -589,6 +589,9 @@ func resume_game() -> bool:
 # Save/Load DNA System
 # ═══════════════════════════════════════════════════════════════════════════════
 
+## 현재 화면 (Screen 전환용)
+var current_screen: String = "title"
+
 ## 현재 위치 (LocationScreen용)
 var current_location: String = "cheongmok_village"
 
@@ -615,6 +618,8 @@ func from_dna(dna: Dictionary) -> void:
 	# World
 	if dna.has("world"):
 		var world: Dictionary = dna["world"]
+		if world.has("current_screen"):
+			current_screen = world["current_screen"]
 		if world.has("current_location"):
 			current_location = world["current_location"]
 		if world.has("visited_locations"):

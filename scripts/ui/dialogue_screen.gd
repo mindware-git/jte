@@ -12,6 +12,9 @@ signal dialogue_finished()
 ## NPC ID
 @export var npc_id: String = "old_monk"
 
+## 복귀할 화면 (null이면 LocationScreen으로)
+var _return_screen: Control = null
+
 # 레지스트리
 var _registry: NPCRegistry
 
@@ -29,8 +32,9 @@ var _choices_container: VBoxContainer
 # Lifecycle
 # ═══════════════════════════════════════════════════════════════════════════════
 
-func _init(p_npc_id: String = "old_monk") -> void:
+func _init(p_npc_id: String = "old_monk", p_return_screen: Control = null) -> void:
 	npc_id = p_npc_id
+	_return_screen = p_return_screen
 
 
 func _ready() -> void:
@@ -171,17 +175,32 @@ func _execute_actions(actions: Array[DialogueData.DialogueAction]) -> void:
 				print("HP 회복: %d" % amount)
 			
 			DialogueData.ActionType.START_BATTLE:
-				var battle_screen := BattleScreen.new(action.target_id)
-				transition_requested.emit(battle_screen)
+				var battle_scene := preload("res://scenes/battle/battle.tscn").instantiate()
+				var rna := {
+					"party": GameManager.party_members,
+					"enemies": [action.target_id],
+					"flags": {}
+				}
+				battle_scene.setup(rna)
+				battle_scene.battle_finished.connect(_on_battle_finished)
+				add_child(battle_scene)
 				return
 			
 			DialogueData.ActionType.END_DIALOGUE:
 				pass  # 대화 종료는 별도 처리
 
 
+func _on_battle_finished(_victory: bool) -> void:
+	# 전투 종료 후 대화 종료
+	_end_dialogue()
+
+
 func _end_dialogue() -> void:
 	dialogue_finished.emit()
 	
-	# LocationScreen으로 복귀
-	var loc_screen := LocationScreen.new(GameManager.current_location)
-	transition_requested.emit(loc_screen)
+	# 복귀 화면이 있으면 그곳으로, 없으면 LocationScreen으로
+	if _return_screen and is_instance_valid(_return_screen):
+		transition_requested.emit(_return_screen)
+	else:
+		var loc_screen := LocationScreen.new(GameManager.current_location)
+		transition_requested.emit(loc_screen)

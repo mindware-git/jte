@@ -215,6 +215,19 @@ func _on_back_pressed() -> void:
 
 
 func _on_confirm_pressed() -> void:
-	# BattleScreen으로 전환
-	var battle := BattleScreen.new()
-	transition_requested.emit(battle)
+	# battle.tscn으로 전환
+	var battle_scene := preload("res://scenes/battle/battle.tscn").instantiate()
+	var rna := {
+		"party": GameManager.party_members,
+		"enemies": ["rock_demon"],
+		"flags": {"test_mode": true}
+	}
+	battle_scene.setup(rna)
+	battle_scene.battle_finished.connect(_on_battle_finished)
+	add_child(battle_scene)
+
+
+func _on_battle_finished(_victory: bool) -> void:
+	# 전투 종료 후 로비로 복귀
+	var lobby := LobbyScreen.new()
+	transition_requested.emit(lobby)
