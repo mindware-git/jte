@@ -1,45 +1,33 @@
-class_name LocationData
-extends RefCounted
+class_name Gate
+extends Area2D
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# LocationData
-# 위치 정보 데이터 클래스 (DNA - 저장 호환)
+# Gate - 맵 간 이동 게이트
+# 플레이어가 진입하면 다른 맵으로 이동
 # ═══════════════════════════════════════════════════════════════════════════════
 
-## 위치 ID
-## 예: "cheongmok_village", "mountain_entrance"
-var id: String = ""
+signal gate_entered(target_location: String, target_tile: Vector2i)
 
-## 위치 이름 번역 키
-## 예: "LOC_CHEONGMOK"
-var name_key: String = ""
+## 이동할 목적지 맵 ID
+@export var target_location: String = ""
 
-## 위치 설명 번역 키
-## 예: "LOC_CHEONGMOK_DESC"
-var desc_key: String = ""
-
-## 이동 가능한 위치 ID 목록
-var connections: Array[String] = []
-
-## 상호작용 ID 목록
-var interactions: Array[String] = []
-
+## 도착할 타일 좌표
+@export var target_tile: Vector2i = Vector2i.ZERO
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Factory Method
+# Lifecycle
 # ═══════════════════════════════════════════════════════════════════════════════
 
-static func create(
-	p_id: String,
-	p_name_key: String,
-	p_desc_key: String = "",
-	p_connections: Array[String] = [],
-	p_interactions: Array[String] = []
-) -> LocationData:
-	var loc := LocationData.new()
-	loc.id = p_id
-	loc.name_key = p_name_key
-	loc.desc_key = p_desc_key
-	loc.connections = p_connections
-	loc.interactions = p_interactions
-	return loc
+func _ready() -> void:
+	pass  # 시그널은 tscn에서 이미 연결됨
+
+
+func _on_body_entered(body: Node2D) -> void:
+	print("Gate: 무언가 진입함 - ", body, " type: ", body.get_class())
+	
+	# 플레이어만 감지
+	if body is Actor:
+		print("  → Actor 확인됨, role: ", body.current_role)
+		if body.current_role == Actor.Role.PLAYER:
+			print("  → 플레이어! 게이트 이동: ", target_location)
+			gate_entered.emit(target_location, target_tile)

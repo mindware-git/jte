@@ -593,7 +593,7 @@ func resume_game() -> bool:
 var current_screen: String = "title"
 
 ## 현재 위치 (LocationScreen용)
-var current_location: String = "cheongmok_village"
+var current_location: String = "bluewood_village"
 
 ## 방문한 위치들
 var visited_locations: Array[String] = []
@@ -606,6 +606,11 @@ var party_members: Array[String] = ["sanzang"]
 
 ## 파티 리더
 var party_leader: String = "sanzang"
+
+## 전투 관련
+var enemy_id: String = ""
+var from_battle: bool = false
+var battle_victory: bool = false
 
 
 ## DNA에서 RNA로 변환 (로드)
@@ -625,6 +630,8 @@ func from_dna(dna: Dictionary) -> void:
 			current_screen = world["current_screen"]
 		if world.has("current_location"):
 			current_location = world["current_location"]
+		if world.has("enemy_id"):
+			enemy_id = world["enemy_id"]
 		if world.has("visited_locations"):
 			visited_locations.clear()
 			for loc in world["visited_locations"]:
@@ -649,8 +656,11 @@ func from_dna(dna: Dictionary) -> void:
 			coin = inv["gold"]
 			gold = coin
 		if inv.has("items"):
-			for item_id in inv["items"]:
-				add_item_to_inventory(item_id)
+			for item_data in inv["items"]:
+				if item_data is Dictionary:
+					add_item_to_inventory(item_data.get("id", ""), item_data.get("count", 1))
+				else:
+					add_item_to_inventory(item_data)
 	
 	# Flags
 	if dna.has("flags"):
@@ -661,14 +671,21 @@ func from_dna(dna: Dictionary) -> void:
 
 ## RNA 상태를 Dictionary로 반환 (동적 인터랙션용)
 func to_rna() -> Dictionary:
-	return {
+	var rna := {
 		"current_location": current_location,
 		"visited_locations": visited_locations,
 		"party_members": party_members,
 		"party_leader": party_leader,
 		"coin": coin,
+		"enemy_id": enemy_id,
 		"flags": _flags.duplicate()
 	}
+	print("=== GameManager.to_rna() ===")
+	print("current_screen: ", current_screen)
+	print("current_location: ", current_location)
+	print("party_members: ", party_members)
+	print("enemy_id: ", enemy_id)
+	return rna
 
 
 ## RNA에서 DNA로 변환 (저장)

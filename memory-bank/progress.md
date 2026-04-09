@@ -6,6 +6,13 @@
 
 ## 완료된 기능
 
+### 탐험 시스템
+- [x] Gate 시스템 (맵 이동)
+- [x] Interactable 시스템 (NPC, 상자, 조사)
+- [x] Actor 클릭 감지
+- [x] NPC 근접 감지 (3 grid 거리)
+- [x] ExploreScreen 동적 Interactable 생성
+
 ### 코어 아키텍처
 - [x] 6계층 아키텍처 설계
 - [x] main.gd 중심 화면 전환 시스템

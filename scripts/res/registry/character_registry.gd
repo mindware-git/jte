@@ -16,61 +16,7 @@ func _register_all_characters() -> void:
 	# 동유기 캐릭터
 	_register_sanzang()
 	_register_wukong()
-	# 기존 캐릭터 (레거시)
-	_register_gyro()
-	_register_shamu()
 	_register_enemy_slime()
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 자이로 (Gyro)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func _register_gyro() -> void:
-	var data := CharacterData.new()
-	data.id = "gyro"
-	data.display_name = "자이로"
-	data.description = "균형 잡힌 전사"
-	data.element = GameManager.ElementType.EARTH
-	
-	# 능력치
-	data.max_hp = 120
-	data.max_mp = 60
-	data.max_bp = 40
-	data.melee_power = 15
-	data.ranged_power = 12
-	data.max_speed = 220.0
-	data.rotation_speed = 6.0
-	data.acceleration = 12.0
-	data.is_flying = false
-	
-	_characters[data.id] = data
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 샤무 (Shamu)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func _register_shamu() -> void:
-	var data := CharacterData.new()
-	data.id = "shamu"
-	data.display_name = "샤무"
-	data.description = "민첩한 마법사"
-	data.element = GameManager.ElementType.WIND
-	
-	# 능력치
-	data.max_hp = 80
-	data.max_mp = 100
-	data.max_bp = 50
-	data.melee_power = 8
-	data.ranged_power = 20
-	data.max_speed = 280.0
-	data.rotation_speed = 8.0
-	data.acceleration = 15.0
-	data.is_flying = true
-	
-	_characters[data.id] = data
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 삼장법사 (Sanzang)
@@ -81,8 +27,6 @@ func _register_sanzang() -> void:
 	data.id = "sanzang"
 	data.display_name = "삼장법사"
 	data.description = "동천취경의 여정을 이끄는 젊은 승려"
-	data.element = GameManager.ElementType.WIND
-	
 	# 능력치 (힐러/서포터)
 	data.max_hp = 90
 	data.max_mp = 120
@@ -106,7 +50,6 @@ func _register_wukong() -> void:
 	data.id = "wukong"
 	data.display_name = "손오공"
 	data.description = "오행봉에서 봉인이 풀린 돌원숭이"
-	data.element = GameManager.ElementType.FIRE
 	
 	# 능력치 (딜러/전열)
 	data.max_hp = 130

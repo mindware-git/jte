@@ -25,11 +25,11 @@ func _create_screen() -> void:
 	
 	match GameManager.current_screen:
 		# "title":
-		# 	screen = TitleScreen.new()
+		#	screen = TitleScreen.new()
 		"explore":
 			screen = ExploreScreen.new()
-		# "battle":
-		# 	screen = BattleScreen.new()
+		"battle":
+			screen = BattleScreen.new()
 		# "animation":
 		# 	screen = StoryScreen.new()
 		# "select":
@@ -40,15 +40,16 @@ func _create_screen() -> void:
 			push_error("Unknown screen: " + GameManager.current_screen)
 			screen = ExploreScreen.new()
 	
+	# 먼저 트리에 추가 (setup에서 is_inside_tree() 체크가 필요한 경우 대비)
+	add_child(screen)
+	_current_screen = screen
+	
 	# Screen 설정
 	if screen.has_method("setup"):
 		screen.setup(GameManager.to_rna())
 	
 	if screen.has_signal("finished"):
 		screen.finished.connect(_on_screen_finished)
-	
-	add_child(screen)
-	_current_screen = screen
 
 func _on_screen_finished() -> void:
 	# RNA 기반 새 화면 생성

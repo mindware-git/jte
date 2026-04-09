@@ -2,6 +2,7 @@
 
 [ext_resource type="TileSet" uid="uid://brh3yq3ty0set" path="res://asset/tileset/grass_tileset.tres" id="1_kct05"]
 [ext_resource type="PackedScene" uid="uid://pvnmssu2aymg" path="res://scenes/entities/actor.tscn" id="2_26una"]
+[ext_resource type="PackedScene" uid="uid://j1c7o4lq8k1g" path="res://scenes/entities/gate.tscn" id="3_ur26d"]
 
 [node name="BluewoodVillage" type="Node2D" unique_id=360695685]
 
@@ -12,3 +13,13 @@ tile_set = ExtResource("1_kct05")
 [node name="NPC" type="Node2D" parent="." unique_id=2087789547]
 
 [node name="Stranger1" parent="NPC" unique_id=987135416 instance=ExtResource("2_26una")]
+
+[node name="Gate" type="Node2D" parent="." unique_id=1174235281]
+
+[node name="ElementalSlopeGate" parent="Gate" unique_id=1891344912 instance=ExtResource("3_ur26d")]
+position = Vector2(602, 388)
+target_location = "elemental_slope"
+
+[node name="TavernGate" parent="Gate" unique_id=221088295 instance=ExtResource("3_ur26d")]
+position = Vector2(606, 477)
+target_location = "tavern"

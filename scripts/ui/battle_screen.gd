@@ -6,7 +6,7 @@ extends Node2D
 # 전투 화면 컨트롤러 (GDScript 동적 생성)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-signal battle_finished(victory: bool)
+signal finished()
 
 # 위치 및 적 ID
 var _location_id: String = "bluewood_village"
@@ -70,10 +70,24 @@ const ENEMY_SPACING := Vector2(64, 0)       # 64픽셀 간격
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func setup(rna: Dictionary) -> void:
+	print("=== BattleScreen.setup() ===")
+	print("RNA 받음: ", rna)
+	
 	_rna = rna
 	_char_registry = CharacterRegistry.new()
 	_skill_registry = SkillRegistry.new()
 	_item_registry = ItemRegistry.new()
+	
+	# GameManager에서 전투 정보 가져오기
+	_location_id = GameManager.current_location
+	_enemy_id = GameManager.enemy_id
+	
+	print("location_id: ", _location_id)
+	print("enemy_id: ", _enemy_id)
+	print("party_members: ", GameManager.party_members)
+	
+	# 타일맵 배경 로드
+	_load_tilemap_background()
 	
 	_create_ui()
 	_setup_battle()
@@ -242,7 +256,7 @@ func _create_action_menu() -> void:
 	vbox.add_child(cancel_btn)
 
 
-func _show_action_menu(character: BattleCharacter) -> void:
+func _show_action_menu(character: Actor) -> void:
 	_action_menu.position = character.position + Vector2(80, -100)
 	_action_menu.visible = true
 	move_child(_action_menu, get_child_count() - 1)  # 최상단으로
@@ -604,7 +618,7 @@ func _on_move_confirmed() -> void:
 	
 	# 캐릭터 위치 업데이트
 	if _character_nodes.has(_selected_actor.id):
-		var char_node: BattleCharacter = _character_nodes[_selected_actor.id]
+		var char_node: Actor = _character_nodes[_selected_actor.id]
 		char_node.position = _battle_grid.grid_to_pixel(target_pos) if _battle_grid else Vector2(target_pos.x * 64, target_pos.y * 64)
 	
 	# 그리드 제거
@@ -843,11 +857,15 @@ func _hide_battle_grid() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _setup_battle() -> void:
+	print("=== _setup_battle() ===")
+	print("_rna: ", _rna)
+	
 	_battle_data = BattleData.new()
 	
 	# 아군 생성
 	var allies: Array[BattleData.Unit] = []
-	var party_ids: Array = _rna.get("party", ["sanzang"])
+	var party_ids: Array = _rna.get("party_members", ["sanzang"])
+	print("party_ids: ", party_ids)
 	for char_id in party_ids:
 		var unit := _create_unit_from_character(char_id, BattleData.Side.ALLY)
 		allies.append(unit)
@@ -935,16 +953,19 @@ func _grid_to_pixel(grid_pos: Vector2i) -> Vector2:
 	return Vector2(grid_pos.x * 64, grid_pos.y * 64)
 
 
-func _create_battle_character(unit: BattleData.Unit) -> BattleCharacter:
-	var battle_char := BattleCharacter.new()
+func _create_battle_character(unit: BattleData.Unit) -> Actor:
+	var battle_char_scene := preload("res://scenes/entities/actor.tscn")
+	var battle_char: Actor = battle_char_scene.instantiate()
 	
 	# 캐릭터 데이터 가져오기
 	var char_data: CharacterData = null
 	if unit.is_ally():
 		char_data = _char_registry.get_character(unit.id)
 	
-	# BattleCharacter 초기화
-	battle_char.init_battle(char_data, unit)
+	# Actor 초기화
+	if char_data:
+		battle_char.init(char_data, Actor.Role.PLAYER if unit.is_ally() else Actor.Role.ENEMY)
+	battle_char.init_battle(unit)
 	
 	# 클릭 시그널 연결
 	battle_char.clicked.connect(_on_character_clicked.bind(unit, battle_char))
@@ -952,7 +973,7 @@ func _create_battle_character(unit: BattleData.Unit) -> BattleCharacter:
 	return battle_char
 
 
-func _on_character_clicked(character: Character, unit: BattleData.Unit, battle_char: BattleCharacter) -> void:
+func _on_character_clicked(actor: Actor, unit: BattleData.Unit, battle_char: Actor) -> void:
 	# 죽은 캐릭터 클릭 무시
 	if unit.is_dead:
 		return
@@ -974,6 +995,10 @@ func _on_character_clicked(character: Character, unit: BattleData.Unit, battle_c
 
 func _update_turn_display() -> void:
 	var actor := _battle_data.get_current_actor()
+	print("=== _update_turn_display() ===")
+	print("current_actor: ", actor.display_name if actor else "null")
+	print("is_ally: ", actor.is_ally() if actor else "null")
+	
 	if actor:
 		_turn_label.text = "%s의 턴" % actor.display_name
 		_is_player_turn = actor.is_ally()
@@ -982,20 +1007,25 @@ func _update_turn_display() -> void:
 		_highlight_current_actor(actor)
 		
 		if not _is_player_turn:
+			print(">>> 적 턴 시작 - 0.5초 대기")
 			# 적 턴은 자동 진행
-			await get_tree().create_timer(0.5).timeout
-			_process_enemy_turn()
+			if is_inside_tree():
+				await get_tree().create_timer(0.5).timeout
+				print(">>> _process_enemy_turn() 호출")
+				_process_enemy_turn()
+			else:
+				print(">>> 트리에 없음 - 적 턴 스킵")
 
 
 func _highlight_current_actor(actor: BattleData.Unit) -> void:
 	# 모든 캐릭터 흐림
 	for char_id in _character_nodes:
-		var char_node: BattleCharacter = _character_nodes[char_id]
+		var char_node: Actor = _character_nodes[char_id]
 		char_node.set_dimmed(true)
 	
 	# 현재 행동자만 밝게
 	if _character_nodes.has(actor.id):
-		var char_node: BattleCharacter = _character_nodes[actor.id]
+		var char_node: Actor = _character_nodes[actor.id]
 		char_node.set_dimmed(false)
 		char_node.set_highlight(true)
 
@@ -1055,13 +1085,13 @@ func _show_attackable_cells() -> void:
 func _highlight_enemies() -> void:
 	# 모든 캐릭터 흐림
 	for char_id in _character_nodes:
-		var char_node: BattleCharacter = _character_nodes[char_id]
+		var char_node: Actor = _character_nodes[char_id]
 		char_node.set_dimmed(true)
 	
 	# 적만 밝게
 	for enemy in _battle_data.enemies:
 		if not enemy.is_dead and _character_nodes.has(enemy.id):
-			var char_node: BattleCharacter = _character_nodes[enemy.id]
+			var char_node: Actor = _character_nodes[enemy.id]
 			char_node.set_dimmed(false)
 
 
@@ -1090,29 +1120,46 @@ func _execute_action(target: BattleData.Unit) -> void:
 
 
 func _process_enemy_turn() -> void:
+	print("=== _process_enemy_turn() ===")
 	var actor := _battle_data.get_current_actor()
+	print("초기 actor: ", actor.display_name if actor else "null")
+	
 	while actor and actor.is_ally():
+		print(">>> 아군 턴 감지 - next_turn 호출")
 		_battle_data.next_turn()
 		actor = _battle_data.get_current_actor()
+		print(">>> next_turn 후 actor: ", actor.display_name if actor else "null")
 	
 	if actor == null:
+		print(">>> actor가 null - 리턴")
 		return
+	
+	print(">>> 적 actor 확정: ", actor.display_name)
 	
 	# AI 초기화
 	if _enemy_ai == null:
+		print(">>> EnemyAI 생성")
 		_enemy_ai = EnemyAI.new()
 	
 	# AI로 행동 결정
+	print(">>> AI decide_action 호출")
 	var action_data := _enemy_ai.decide_action(actor, _battle_data, _skill_registry)
+	print(">>> action_data: ", action_data)
+	print(">>> action_data.type: ", action_data.type if action_data else "null")
 	
 	# 행동 실행
 	match action_data.type:
 		"MOVE":
+			print(">>> MOVE 실행")
 			_process_enemy_move(actor, action_data.position)
 		"ATTACK":
+			print(">>> ATTACK 실행")
 			_process_enemy_attack(actor, action_data.target)
 		"SKILL":
+			print(">>> SKILL 실행")
 			_process_enemy_skill(actor, action_data.target, action_data.skill)
+		_:
+			print(">>> 알 수 없는 액션 타입: ", action_data.type)
 
 
 func _process_enemy_move(enemy: BattleData.Unit, move_pos: Vector2i) -> void:
@@ -1136,7 +1183,7 @@ func _process_enemy_move(enemy: BattleData.Unit, move_pos: Vector2i) -> void:
 	
 	# 캐릭터 위치 업데이트
 	if _character_nodes.has(enemy.id):
-		var char_node: BattleCharacter = _character_nodes[enemy.id]
+		var char_node: Actor = _character_nodes[enemy.id]
 		char_node.position = _grid_to_pixel(move_pos)
 	
 	_battle_data.next_turn()
@@ -1249,10 +1296,22 @@ func _end_battle() -> void:
 	confirm_btn.text = "확인"
 	confirm_btn.position = Vector2(512, 400)
 	confirm_btn.size = Vector2(200, 50)
-	confirm_btn.pressed.connect(func() -> void:
-		battle_finished.emit(_battle_data.is_victory)
-	)
+	confirm_btn.pressed.connect(_on_battle_confirm_pressed)
 	add_child(confirm_btn)
+
+
+func _on_battle_confirm_pressed() -> void:
+	# RNA 업데이트
+	if _battle_data.is_victory:
+		GameManager.current_screen = "explore"
+	else:
+		GameManager.current_screen = "title"
+	
+	GameManager.from_battle = true
+	GameManager.battle_victory = _battle_data.is_victory
+	
+	# 화면 전환
+	finished.emit()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

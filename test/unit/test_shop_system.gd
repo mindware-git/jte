@@ -5,13 +5,12 @@ extends GutTest
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Preload scripts
-var _shop_data_script := preload("res://scripts/res/shop_data.gd")
 var _shop_registry_script := preload("res://scripts/res/registry/shop_registry.gd")
 var _item_registry_script := preload("res://scripts/res/registry/item_registry.gd")
 
-var _shop_data
-var _shop_registry
-var _item_registry
+var _shop_data: ShopData
+var _shop_registry: ShopRegistry
+var _item_registry: ItemRegistry
 
 
 func before_each() -> void:
@@ -25,7 +24,7 @@ func before_each() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func test_shop_data_creation() -> void:
-	_shop_data = _shop_data_script.ShopData.create("test_shop", "SHOP_TEST", "Test shop description")
+	_shop_data = ShopData.create("test_shop", "SHOP_TEST", "Test shop description")
 	
 	assert_eq(_shop_data.id, "test_shop", "Shop ID should match")
 	assert_eq(_shop_data.name_key, "SHOP_TEST", "Shop name key should match")
@@ -35,7 +34,7 @@ func test_shop_data_creation() -> void:
 
 func test_shop_data_with_items() -> void:
 	var items: Array[String] = ["potion", "ether", "antidote"]
-	_shop_data = _shop_data_script.ShopData.with_items("test_shop", "SHOP_TEST", items)
+	_shop_data = ShopData.with_items("test_shop", "SHOP_TEST", items)
 	
 	assert_eq(_shop_data.id, "test_shop", "Shop ID should match")
 	assert_eq(_shop_data.sell_items.size(), 3, "Shop should have 3 items")
@@ -45,7 +44,7 @@ func test_shop_data_with_items() -> void:
 
 
 func test_shop_data_add_item() -> void:
-	_shop_data = _shop_data_script.ShopData.create("test_shop", "SHOP_TEST")
+	_shop_data = ShopData.create("test_shop", "SHOP_TEST")
 	_shop_data.add_item("potion")
 	_shop_data.add_item("ether", 5)  # 재고 5개
 	_shop_data.add_item("antidote", -1, 0.8)  # 20% 할인
@@ -64,7 +63,7 @@ func test_shop_data_add_item() -> void:
 
 func test_shop_data_get_item_ids() -> void:
 	var items: Array[String] = ["potion", "ether"]
-	_shop_data = _shop_data_script.ShopData.with_items("test_shop", "SHOP_TEST", items)
+	_shop_data = ShopData.with_items("test_shop", "SHOP_TEST", items)
 	
 	var item_ids = _shop_data.get_item_ids()
 	assert_eq(item_ids.size(), 2, "Should return 2 item IDs")
@@ -73,7 +72,7 @@ func test_shop_data_get_item_ids() -> void:
 
 
 func test_shop_data_has_item() -> void:
-	_shop_data = _shop_data_script.ShopData.create("test_shop", "SHOP_TEST")
+	_shop_data = ShopData.create("test_shop", "SHOP_TEST")
 	_shop_data.add_item("potion")
 	
 	assert_true(_shop_data.has_item("potion"), "Should have potion")
@@ -85,7 +84,7 @@ func test_shop_data_has_item() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func test_shop_calculate_sell_price() -> void:
-	_shop_data = _shop_data_script.ShopData.create("test_shop", "SHOP_TEST")
+	_shop_data = ShopData.create("test_shop", "SHOP_TEST")
 	_shop_data.sell_price_rate = 1.0  # 정가
 	_shop_data.add_item("potion")  # 기본 가격 50
 	
@@ -94,7 +93,7 @@ func test_shop_calculate_sell_price() -> void:
 
 
 func test_shop_calculate_sell_price_with_discount() -> void:
-	_shop_data = _shop_data_script.ShopData.create("test_shop", "SHOP_TEST")
+	_shop_data = ShopData.create("test_shop", "SHOP_TEST")
 	_shop_data.sell_price_rate = 1.0
 	_shop_data.add_item("potion", -1, 0.8)  # 20% 할인
 	
@@ -103,7 +102,7 @@ func test_shop_calculate_sell_price_with_discount() -> void:
 
 
 func test_shop_calculate_buy_price() -> void:
-	_shop_data = _shop_data_script.ShopData.create("test_shop", "SHOP_TEST")
+	_shop_data = ShopData.create("test_shop", "SHOP_TEST")
 	_shop_data.buy_price_rate = 0.5  # 50% 가격에 구매
 	_shop_data.add_item("potion")  # 기본 가격 50
 	
@@ -112,7 +111,7 @@ func test_shop_calculate_buy_price() -> void:
 
 
 func test_shop_price_rate_modification() -> void:
-	_shop_data = _shop_data_script.ShopData.create("test_shop", "SHOP_TEST")
+	_shop_data = ShopData.create("test_shop", "SHOP_TEST")
 	_shop_data.sell_price_rate = 1.5  # 150% 가격
 	_shop_data.buy_price_rate = 0.3  # 30% 가격에 구매
 	_shop_data.add_item("ether")  # 기본 가격 100
@@ -168,7 +167,7 @@ func test_shop_registry_is_shop_available() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func test_shop_rna_conditions() -> void:
-	_shop_data = _shop_data_script.ShopData.create("test_shop", "SHOP_TEST")
+	_shop_data = ShopData.create("test_shop", "SHOP_TEST")
 	_shop_data.set_required_flag("wukong_unsealed", true)
 	_shop_data.add_item("potion")
 	
@@ -182,7 +181,7 @@ func test_shop_rna_conditions() -> void:
 
 
 func test_shop_no_conditions() -> void:
-	_shop_data = _shop_data_script.ShopData.create("test_shop", "SHOP_TEST")
+	_shop_data = ShopData.create("test_shop", "SHOP_TEST")
 	_shop_data.add_item("potion")
 	
 	# 조건 없으면 항상 가능
@@ -195,7 +194,7 @@ func test_shop_no_conditions() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func test_shop_data_serialization() -> void:
-	_shop_data = _shop_data_script.ShopData.create("test_shop", "SHOP_TEST", "Test description")
+	_shop_data = ShopData.create("test_shop", "SHOP_TEST", "Test description")
 	_shop_data.add_item("potion")
 	_shop_data.add_item("ether", 5, 0.9)
 	_shop_data.sell_price_rate = 1.2
@@ -225,7 +224,7 @@ func test_shop_data_deserialization() -> void:
 		"required_flags": {}
 	}
 	
-	_shop_data = _shop_data_script.ShopData.new()
+	_shop_data = ShopData.new()
 	_shop_data.from_dict(dict)
 	
 	assert_eq(_shop_data.id, "loaded_shop", "Deserialized ID should match")

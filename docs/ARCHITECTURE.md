@@ -1089,13 +1089,94 @@ func _on_battle_finished(victory: bool) -> void:
 
 ### 상호작용 오브젝트 분류
 
-- `NPC`
-- `상자`
-- `조사 포인트`
-- `문/출구`
-- `퍼즐 장치`
-- `스토리 트리거`
-- `은닉 포인트`
+#### Gate (자동 트리거)
+- 맵 이동 전용
+- 플레이어 접촉 시 자동으로 다음 맵으로 이동
+- `body_entered` 시그널 기반
+- 파일: `scenes/entities/gate.tscn`, `scenes/entities/gate.gd`
+
+#### Interactable (클릭 기반)
+- NPC 대화
+- 상자 (아이템 획득)
+- 조사 포인트
+- 퍼즐 장치
+- 스토리 트리거
+- 은닉 포인트
+- `body_entered` + 클릭 조합
+- 파일: `scenes/entities/interactable.tscn`, `scenes/entities/interactable.gd`
+
+#### Gate vs Interactable 분리 이유
+| 타입 | 용도 | 감지 방식 | 사용자 입력 |
+|------|------|-----------|-------------|
+| Gate | 맵 이동 | body_entered 자동 | 불필요 |
+| Interactable | 상호작용 | body_entered + 클릭 | 필요 |
+
+**NPC용 Interactable collision 크기**: 192x192 (3 grid 거리에서 대화 가능)
+
+### NPC Registry와 Actor/Interactable 통합
+
+NPC 데이터는 `NPCRegistry`가 관리하고, 시각적 표현은 `Actor`, 상호작용 감지는 `Interactable`이 담당합니다.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Location Scene (tscn)                   │
+│                                                             │
+│  ┌─────────────┐                                            │
+│  │   Actor     │  ←── NPC 시각적 표현, 이동                 │
+│  │   (NPC)     │      CharacterData 기반 초기화             │
+│  └─────────────┘                                            │
+│         │                                                   │
+│         ▼                                                   │
+│  ┌─────────────┐                                            │
+│  │Interactable │  ←── 클릭 감지, interacted 신호            │
+│  │  (npc 타입) │      interact_data = {npc_id: "..."}      │
+│  └─────────────┘                                            │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                      ExploreScreen                          │
+│                                                             │
+│  1. Location 씬 로드                                        │
+│  2. NPC Actor 발견 → Interactable 생성                      │
+│  3. Interactable.interacted → NPCRegistry 조회              │
+│  4. DialogueData → DialogueUI 표시                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### NPCRegistry 책임
+- NPCData 저장소 (id, display_name_key, portrait, default_dialogue_id)
+- 위치별 NPC 목록 조회 (`get_npcs_by_location`)
+- RNA 기반 동적 대화 조회 (`get_dialogue`)
+
+#### Actor 책임
+- NPC 시각적 표현
+- 타일 기반 이동
+- 방향 애니메이션
+
+#### Interactable 책임
+- 플레이어 진입 감지
+- 클릭 이벤트 처리
+- `interacted` 신호 발생
+
+#### 데이터 흐름
+```
+플레이어 클릭
+    │
+    ▼
+Interactable._on_input_event()
+    │
+    ▼
+interacted.emit(self)
+    │
+    ▼
+ExploreScreen._on_interactable_interacted()
+    │
+    ▼
+NPCRegistry.get_dialogue(npc_id, rna)
+    │
+    ▼
+DialogueUI.show(dialogue_data)
+```
 
 ### 조사 UX 원칙
 

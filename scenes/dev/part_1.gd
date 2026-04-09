@@ -21,4 +21,4 @@ func _ready() -> void:
 		GameManager.party_members = ["sanzang"]
 	
 	# main.tscn으로 전환 (화면 생성은 main.gd가 담당)
-	get_tree().change_scene_to_file("res://scenes/prd/main.tscn")
+	get_tree().change_scene_to_file.call_deferred("res://scenes/prd/main.tscn")

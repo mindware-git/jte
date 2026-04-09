@@ -2,44 +2,32 @@ extends Node2D
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # DevBattle
-# 테스트용 전투 씬
-# RNA만 바꿔서 다양한 전투 테스트 가능
+# 테스트용 전투 진입점
+# DNA 로드 후 main.tscn으로 전환
 # ═══════════════════════════════════════════════════════════════════════════════
 
-## 테스트할 RNA (인스펙터에서 수정 가능)
+## 테스트용 RNA 설정 (인스펙터에서 수정 가능)
 @export var test_party: Array[String] = ["sanzang", "wukong"]
 @export var test_enemies: Array[String] = ["rock_demon"]
 
 
 func _ready() -> void:
-	# 테스트 RNA 생성
-	var rna := _create_test_rna()
+	# 배틀 테스트용 DNA 로드
+	var dna_path := "res://asset/saves/dev/battle_init.json"
 	
-	# Battle 씬 인스턴스화
-	var battle_scene := preload("res://scenes/battle/battle.tscn").instantiate()
-	battle_scene.setup(rna)
-	battle_scene.battle_finished.connect(_on_battle_finished)
-	add_child(battle_scene)
-
-
-func _create_test_rna() -> Dictionary:
-	return {
-		"party": test_party,
-		"enemies": test_enemies,
-		"flags": {
-			"test_mode": true
-		}
-	}
-
-
-func _on_battle_finished(victory: bool) -> void:
-	print("[DevBattle] 전투 종료: %s" % ("승리" if victory else "패배"))
+	if GameManager.load_dev_dna(dna_path):
+		print("배틀 초기 상태 로드 성공")
+		print("현재 화면: ", GameManager.current_screen)
+		print("파티: ", GameManager.party_members)
+		print("적: ", GameManager.enemy_id)
+	else:
+		push_warning("DNA 로드 실패, 기본값 사용")
+		GameManager.current_screen = "battle"
+		GameManager.party_members = test_party
+		GameManager.enemy_id = test_enemies[0] if test_enemies.size() > 0 else "rock_demon"
+		GameManager.current_location = "test_battle"
+		GameManager.coin = 100
+		GameManager._flags = {"test_mode": true}
 	
-	# 결과 표시
-	var result := Label.new()
-	result.text = "전투 테스트 완료: %s\nESC로 종료" % ("승리" if victory else "패배")
-	result.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	result.add_theme_font_size_override("font_size", 24)
-	result.position = Vector2(440, 300)
-	result.add_theme_color_override("font_color", Color.WHITE)
-	add_child(result)
+	# main.tscn으로 전환 (화면 생성은 main.gd가 담당)
+	get_tree().change_scene_to_file.call_deferred("res://scenes/prd/main.tscn")

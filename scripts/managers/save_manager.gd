@@ -171,7 +171,7 @@ func load_local_dna(location_id: String, slot_index: int = 0) -> Dictionary:
 	if FileAccess.file_exists(path):
 		var file := FileAccess.open(path, FileAccess.READ)
 		if file:
-			var json := JSON.parse_string(file.get_as_text())
+			var json: Variant = JSON.parse_string(file.get_as_text())
 			if json:
 				return json
 	return _create_empty_local_dna(location_id)

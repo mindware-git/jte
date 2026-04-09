@@ -1,0 +1,33 @@
+{
+	"header": {
+		"save_format_version": 1,
+		"app_version": "0.1.0",
+		"content_version": 1
+	},
+	"progress": {
+		"part_id": "part_1",
+		"chapter_id": "act1"
+	},
+	"world": {
+		"current_screen": "battle",
+		"current_location": "test_battle",
+		"enemy_id": "rock_demon",
+		"visited_locations": ["bluewood_village", "test_battle"]
+	},
+	"party": {
+		"members": ["sanzang", "wukong"],
+		"leader": "sanzang"
+	},
+	"inventory": {
+		"gold": 100,
+		"items": [
+			{"id": "potion", "count": 3},
+			{"id": "ether", "count": 2}
+		]
+	},
+	"flags": {
+		"test_mode": true,
+		"prologue_complete": true,
+		"wukong_unsealed": true
+	}
+}

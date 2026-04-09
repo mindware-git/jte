@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://cbrinkmmepia0"]
+
+[ext_resource type="Script" uid="uid://duj7gcw4pg5pt" path="res://scenes/entities/interactable.gd" id="1_g5mdo"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_x7cfi"]
+
+[node name="Interactable" type="Area2D" unique_id=1915239313]
+script = ExtResource("1_g5mdo")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=980425720]
+shape = SubResource("RectangleShape2D_x7cfi")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
+[connection signal="body_exited" from="." to="." method="_on_body_exited"]

@@ -2,90 +2,86 @@
 
 ## 현재 작업 포커스
 
-현재 프로젝트는 **파트 1 콘텐츠 구현 단계**입니다. 상점 시스템이 완성되었으며, 탐험 시스템 확장이 다음 작업입니다.
+현재 프로젝트는 **파트 1 콘텐츠 구현 단계**입니다. 탐험 시스템의 핵심인 Gate와 Interactable 시스템이 완성되었으며, Registry 시스템이 정리되었습니다.
 
 ## 최근 변경 사항
 
-### 2026-04-08 상점 시스템 구현 완료
-- ShopData (상점 데이터 클래스) 생성
-- ShopRegistry (상점 레지스트리) 생성
-- GeneralStore (잡화상 상점 데이터) 생성
-- ShopPanel (오버레이 상점 UI) 생성
-- LocationScreen에 상점 상호작용 연동
-- bluewood_village에 잡화상 연결
-- 상점 관련 번역 키 추가
+### 2026-04-09 Registry 시스템 정리
+- **CharacterRegistry**: 레거시 캐릭터(gyro, shamu, enemy_slime) 제거, 동유기 캐릭터만 유지 (sanzang, wukong, bajie, sandy)
+- **LocationRegistry**: 삭제 - 씬 기반으로 대체
+- **NPCRegistry**: 유지 - 대화 데이터 관리 전담
 
-### 2026-04-08 이전 구현
-- TavernScreen (주점 내부 화면) 생성
-- DialoguePanel (오버레이 다이얼로그) 생성
-- old_man NPC 데이터 생성 및 NPCRegistry 등록
-- InteractionData LOCATION 타입 추가
-- part_0_complete.json → part_1_init.json (파일명 변경)
-- cheongmok_village → bluewood_village (위치 ID 수정)
-- 파티 멤버에서 오공 제거 (초기 상태)
+### 2026-04-09 NPC Registry → Actor/Interactable 통합 설계
+```
+Location Scene (tscn)
+├── Actor (NPC) ──────→ 시각적 표현, 이동
+├── Gate ────────────→ 위치 전환
+└── Interactable ────→ 클릭 감지
+
+ExploreScreen
+├── NPCRegistry ────→ 대화 데이터 조회
+└── DialogueUI ─────→ 대화 표시
+```
+
+### 2026-04-09 전투 시스템 개선
+- **RNA 데이터 전달 문제 해결**: `to_rna()`와 `_setup_battle()` 간 키 불일치 수정
+- **전투 진입 문제 해결**: `main.gd`에서 `add_child()` 후 `setup()` 호출 순서 변경
+- **전투 종료 후 화면 전환**: 승리 시 explore, 패배 시 title 화면으로 전환
 
 ### 파일 구조
 ```
-scripts/
-├── entities/
-│   ├── character.gd        # 기본 캐릭터
-│   └── battle_grid.gd      # 전투 그리드
-├── managers/
-│   └── enemy_ai.gd         # 적 AI
-├── res/
-│   ├── battle_data.gd      # 전투 데이터
-│   ├── skill_data.gd       # 스킬 데이터
-│   ├── interaction_data.gd  # 상호작용 데이터
-│   └── registry/           # 레지스트리들
-│       ├── locations/
-│       │   └── bluewood_village.gd
-│       └── npcs/
-│           └── old_man.gd
-└── ui/
-    ├── dialogue_screen.gd
-    ├── dialogue_panel.gd     # 오버레이 대화
-    ├── tavern_screen.gd      # 주점 내부
-    ├── location_screen.gd
-    └── ...
+scripts/res/
+├── character_data.gd
+├── npc_data.gd
+├── item_data.gd
+├── skill_data.gd
+├── battle_data.gd
+├── save_data.gd
+└── registry/
+    ├── character_registry.gd  # 동유기 캐릭터만
+    ├── npc_registry.gd        # 대화 데이터 관리
+    ├── skill_registry.gd
+    └── item_registry.gd
+
+scenes/entities/
+├── gate.tscn              # 맵 이동용 Area2D
+├── gate.gd                # Gate 로직
+├── interactable.tscn      # 상호작용용 Area2D
+├── interactable.gd        # Interactable 로직
+├── actor.tscn             # 캐릭터 (Player, NPC, Enemy)
+└── actor.gd               # Actor 로직
 ```
 
 ## 다음 단계
 
-1. **탐험 시스템 확장**
-   - 상호작용 오브젝트
-   - 퍼즐 기믹
-   - 이벤트 트리거
+1. **대화 시스템 연동**
+   - NPCRegistry에서 대화 데이터 조회
+   - DialogueUI 구현
 
 2. **전투 시스템 완성**
    - 전투 UI 개선
    - 스킬 효과 구현
-   - 상태이상 시스템
 
 3. **저장 시스템 구현**
    - DNA/RNA 변환 로직
-   - 마이그레이션 시스템
 
 ## 활성 결정 사항
+
+### Registry 책임 분리
+| Registry | 책임 |
+|----------|------|
+| CharacterRegistry | 캐릭터 데이터 (스탯, 속성) |
+| NPCRegistry | NPC 대화 데이터 |
+| SkillRegistry | 스킬 데이터 |
+| ItemRegistry | 아이템 데이터 |
+
+### 상호작용 시스템 설계
+- Gate: 맵 이동 전용, 플레이어 접촉 시 자동 발동
+- Interactable: 클릭 기반 상호작용, NPC/상자/조사 포인트
 
 ### 화면 관리
 - `main.gd`가 모든 화면 전환 관리
 - 화면은 동적 생성, `.tscn` 파일 최소화
-- HUD는 항상 상단, 특정 화면에서만 숨김
-
-### 오버레이 패턴
-- DialoguePanel: 기존 화면 위에 대화 표시
-- ShopPanel: 기존 화면 위에 상점 표시
-- `add_child(panel)` 방식, 화면 전환 없음
-
-### 전투 설계
-- 칸 기반 타겟팅
-- 아군/적 동일 Unit 구조
-- 레지스트리로 스킬/아이템 관리
-
-### 데이터 관리
-- GameManager에서 게임 상태 관리
-- JSON 기반 저장 데이터
-- 번역 키 기반 텍스트
 
 ## 중요 패턴
 
@@ -102,14 +98,10 @@ scripts/
 - `docs/BATTLE_ARCHITECTURE.md` - 전투 시스템
 - `docs/SAVE_LOAD_ARCHITECTURE.md` - 저장 시스템
 
-## 알려진 이슈
-
-1. ShopPanel 테스트 파일 컴파일 이슈 (순환 참조 의심)
-2. ItemRegistry에 더 많은 아이템 데이터 필요
-
 ## 프로젝트 인사이트
 
 - **탐험이 핵심**: 전투는 탐험의 연장선
 - **모바일 우선**: 모든 UX는 터치 기준
 - **AI 협업**: Spec → Test → Implementation 흐름 유지
 - **오버레이 방식**: 화면 전환 없이 패널 표시
+- **Registry 분리**: 데이터 타입별 전담 관리
