@@ -211,164 +211,385 @@
 
 ---
 
-## Save DNA 설계
+## Save DNA 설계 (구체 스키마)
 
-DNA는 `안정성`이 가장 중요하다.
+DNA는 `안정성`이 가장 중요하다. 아래는 코드에서 실제로 흩어져 있는 모든 상태를 하나의 JSON 스키마로 통합한 결과다.
 
-권장 최상위 구조:
+### 전체 DNA JSON 스키마
 
-1. `meta`
-2. `progress`
-3. `world`
-4. `party`
-5. `inventory`
-6. `quests`
-7. `flags`
-8. `system`
+```json
+{
+  "header": {
+    "magic": "DONGYUGI_SAVE",
+    "save_format_version": 1,
+    "app_version": "0.1.0",
+    "content_version": 1,
+    "slot_index": 0,
+    "slot_type": "manual",
+    "save_uuid": "uuid-v4-string",
+    "created_at": "2026-04-09T14:30:00",
+    "updated_at": "2026-04-09T16:00:00",
+    "playtime_seconds": 3600.0,
+    "checksum": "sha256-hex"
+  },
 
-### 1. meta
+  "progress": {
+    "part_id": "part_1",
+    "chapter_id": "act1_prologue",
+    "sub_step_id": "",
+    "current_objective_id": "",
+    "last_animation_id": "",
+    "last_explore_entry_id": ""
+  },
 
-포함:
+  "world": {
+    "current_screen": "explore",
+    "current_location": "bluewood_village",
+    "current_map": "village",
+    "visited_locations": ["bluewood_village", "elemental_slope"],
+    "location_states": {
+      "bluewood_village": {
+        "player_tile": [11, 12]
+      },
+      "elemental_slope": {
+        "player_tile": [5, 8]
+      }
+    }
+  },
 
-- 헤더와 중복 가능한 최소 필드
-- 저장 사유
-- 마지막 안전 저장 지점 ID
+  "party": {
+    "members": ["sanzang", "wukong"],
+    "leader": "sanzang",
+    "owned_characters": ["sanzang", "wukong", "bajie"],
+    "current_character": "sanzang",
+    "character_states": {
+      "sanzang": {
+        "character_id": "sanzang",
+        "level": 3,
+        "experience": 250,
+        "equipped_weapon": "equip_weapon_magic_staff",
+        "equipped_armor": "equip_armor_monk_robe",
+        "equipped_accessory": "",
+        "learned_skills": ["divine_grace", "purifying_light"],
+        "inventory": {
+          "item_herb": 5,
+          "item_potion": 2
+        }
+      },
+      "wukong": {
+        "character_id": "wukong",
+        "level": 2,
+        "experience": 120,
+        "equipped_weapon": "equip_weapon_yeouibong",
+        "equipped_armor": "equip_armor_tiger_pelt",
+        "equipped_accessory": "equip_acc_nimbus",
+        "learned_skills": ["nimbus_strike"],
+        "inventory": {}
+      }
+    }
+  },
 
-### 2. progress
+  "player_stats": {
+    "player_name": "삼장",
+    "player_hp": 100,
+    "player_max_hp": 100,
+    "player_mp": 50,
+    "player_max_mp": 50,
+    "player_attack": 10,
+    "level": 1,
+    "experience": 0
+  },
 
-포함:
+  "inventory": {
+    "coin": 1500,
+    "gem": 10
+  },
 
-- 챕터 ID
-- 파트 ID
-- 서브 단계 ID
-- 현재 목표 ID
-- 직전 애니메이션 ID
-- 직전 탐험 진입 포인트 ID
+  "quests": {},
 
-### 3. world
+  "flags": {
+    "prologue_complete": true,
+    "quest_started": true,
+    "quest_complete": false,
+    "forest_unlocked": true,
+    "temple_unlocked": false,
+    "boss_defeated": false,
+    "wukong_unlocked": true,
+    "current_part": "part_1",
+    "current_chapter": "act1_prologue"
+  },
 
-포함:
+  "system": {
+    "game_purchased": false,
+    "save_slots": 1
+  }
+}
+```
 
-- 현재 맵 ID
-- 현재 위치 앵커 ID 또는 좌표
-- 현재 활성 팀 ID
-- 맵별 상자 개봉 목록
-- 맵별 조사 완료 목록
-- 맵별 퍼즐 해결 상태
-- 맵별 NPC 대화 단계
-- 상점 해금 상태
+### DNA 필드 원본 소스 대조표
 
-원칙:
+아래 표는 이 DNA JSON의 각 필드가 현재 코드에서 **어디에 흩어져 있는지**를 정리한 것이다. 통합 전의 원본 위치를 기록해 두어야 마이그레이션과 리팩터링이 안전하다.
 
-- 가능하면 `생 좌표`보다 `앵커 ID`를 우선한다.
-- 맵 구조가 바뀌어도 앵커가 남아 있으면 복구가 쉽다.
+| DNA 경로 | 현재 코드 위치 | 변수명 |
+|---|---|---|
+| `header.slot_index` | SaveData | `slot_index` |
+| `header.created_at` | SaveData | `saved_at` |
+| `header.playtime_seconds` | SaveData | `play_time` |
+| `progress.part_id` | GameManager._flags | `_flags["current_part"]` |
+| `progress.chapter_id` | GameManager._flags | `_flags["current_chapter"]` |
+| `world.current_screen` | GameManager | `current_screen` |
+| `world.current_location` | GameManager | `current_location` |
+| `world.current_map` | GameManager | `current_map` |
+| `world.visited_locations` | GameManager | `visited_locations` |
+| `world.location_states` | GameManager | `location_states` |
+| `party.members` | GameManager | `party_members` |
+| `party.leader` | GameManager | `party_leader` |
+| `party.owned_characters` | GameManager | `owned_characters` |
+| `party.current_character` | GameManager | `current_character` |
+| `party.character_states.*` | GameManager | `character_states` → `CharacterState` |
+| `player_stats.player_name` | GameManager | `player_name` |
+| `player_stats.player_hp` | GameManager | `player_hp` |
+| `player_stats.player_max_hp` | GameManager | `player_max_hp` |
+| `player_stats.player_mp` | GameManager | `player_mp` |
+| `player_stats.player_max_mp` | GameManager | `player_max_mp` |
+| `player_stats.player_attack` | GameManager | `player_attack` |
+| `player_stats.level` | GameManager | `level` |
+| `player_stats.experience` | GameManager | `experience` |
+| `inventory.coin` | GameManager | `coin` |
+| `inventory.gem` | GameManager | `gem` |
+| `flags.*` | GameManager | `_flags` |
+| `system.game_purchased` | GameManager | `game_purchased` |
+| `system.save_slots` | GameManager | `save_slots` |
 
-### 4. party
+### DNA에 포함하지 않는 것
 
-포함:
+아래는 DNA에 절대 넣지 않는다 (RNA에만 존재):
 
-- 전체 동료 목록
-- 팀 A 구성
-- 팀 B 구성
-- 각 캐릭터 레벨
-- 경험치
-- 능력치
-- 장비
-- 스킬 해금 상태
-- 상태이상 지속 정보가 필요하면 최소치만 저장
-
-### 5. inventory
-
-포함:
-
-- 공용 재화
-- 공용 퀘스트 아이템
-- 팀별 소비 아이템
-- 팀별 장비
-
-### 6. quests
-
-포함:
-
-- 퀘스트 ID
-- 상태
-- 목표 카운트
-- 완료 여부
-- 보상 수령 여부
-
-### 7. flags
-
-포함:
-
-- 스토리 플래그
-- 이벤트 플래그
-- 튜토리얼 플래그
-- 분기 플래그
-
-원칙:
-
-- 의미 없는 불리언 난립보다, 범주별 네임스페이스를 둔다.
-
-### 8. system
-
-포함:
-
-- 저장 시 선택 언어
-- 시스템 언어 추종 여부
-- 최근 사용 UI 탭 정도의 복원 가능한 선택값
+- `enemy_name`, `enemy_hp`, `enemy_max_hp`, `enemy_attack` (전투 임시)
+- `enemy_id`, `from_battle`, `battle_victory` (화면 전환 임시)
+- `current_state`, `previous_state` (GameState enum, PVP 용)
+- `current_match`, `current_map_data`, `players`, `local_player` (PVP 런타임)
+- `item_database`, `skill_database`, `skill_unlock_table` (정적 레지스트리)
 
 ---
 
-## Runtime RNA 설계
+## Runtime RNA 설계 (구체 Dictionary)
 
-RNA는 `플레이 중심`이어야 한다.
+RNA는 `플레이 중심`이어야 한다. 모든 RNA는 `GameManager.rna` 하위의 Dictionary로 통합하여 각 Screen의 `setup(rna)` 호출에 일관되게 전달한다.
 
-권장 하위 구조:
+### GameManager.rna 전체 구조
 
-### 1. Flow RNA
+```gdscript
+## GameManager.to_rna() → Dictionary
+var rna: Dictionary = {
+    # ─── Flow RNA ─────────────────────────────────────────
+    "flow": {
+        "current_screen": "explore",       # "title" | "story" | "explore" | "battle" | "location" | "shop" | "result"
+        "current_location": "bluewood_village",
+        "previous_screen": "story",
+        "input_locked": false,
+        "from_battle": false,              # 전투에서 돌아왔는가
+        "battle_victory": false,           # 직전 전투 승리 여부
+    },
 
-- 현재 모드: `boot`, `title`, `animation`, `explore`, `battle`, `overlay`
-- 다음 전환 목표
-- 입력 잠금 여부
+    # ─── Party RNA ────────────────────────────────────────
+    "party": {
+        "members": ["sanzang", "wukong"],
+        "leader": "sanzang",
+        "owned_characters": ["sanzang", "wukong", "bajie"],
+        "current_character": "sanzang",
+    },
 
-### 2. Animation RNA
+    # ─── Player Stats RNA ─────────────────────────────────
+    "player_stats": {
+        "player_name": "삼장",
+        "player_hp": 100,
+        "player_max_hp": 100,
+        "player_mp": 50,
+        "player_max_mp": 50,
+        "player_attack": 10,
+        "level": 1,
+        "experience": 0,
+    },
 
-- 현재 애니메이션 시퀀스
-- 현재 명령 인덱스
-- 자동 진행 속도
-- 가속 눌림 여부
+    # ─── Economy RNA ──────────────────────────────────────
+    "economy": {
+        "coin": 1500,
+        "gem": 10,
+    },
 
-### 3. Explore RNA
+    # ─── World RNA ────────────────────────────────────────
+    "world": {
+        "current_map": "village",
+        "visited_locations": ["bluewood_village", "elemental_slope"],
+        "location_states": {
+            "bluewood_village": { "player_tile": Vector2i(11, 12) },
+        },
+    },
 
-- 현재 맵 런타임 상태
-- 플레이어 이동 목적지
-- 현재 상호작용 대상
-- 경로 탐색 중 여부
+    # ─── Battle RNA (전투 진입 시에만 채워짐) ─────────────
+    "battle": {
+        "enemy_id": "fire_spirit",
+        "enemy_name": "불의 정령",
+        "enemy_hp": 0,
+        "enemy_max_hp": 0,
+        "enemy_attack": 0,
+    },
 
-### 4. Battle RNA
+    # ─── Flags RNA ────────────────────────────────────────
+    "flags": {
+        "prologue_complete": true,
+        "quest_started": true,
+        "quest_complete": false,
+        "forest_unlocked": true,
+        "temple_unlocked": false,
+        "boss_defeated": false,
+        "wukong_unlocked": true,
+        "current_part": "part_1",
+        "current_chapter": "act1_prologue",
+    },
 
-- 턴 큐
-- 선택 중인 행동
-- 현재 타겟
-- 연출 대기열
+    # ─── System RNA ───────────────────────────────────────
+    "system": {
+        "game_purchased": false,
+        "save_slots": 1,
+    },
+}
+```
 
-### 5. UI RNA
+### RNA 필드 상세
 
-- 열린 패널
-- 선택 중 탭
-- 말풍선 표시 상태
+#### 1. Flow RNA — 화면 전환 제어
 
-### 6. Domain RNA
+현재 코드에서 `GameManager.current_screen`, `GameManager.from_battle`, `GameManager.battle_victory` 등이 별도 변수로 흩어져 있는 것을 `rna.flow`로 통합한다.
 
-- 파티 관리자
-- 인벤토리 관리자
-- 퀘스트 관리자
-- 플래그 관리자
+| 키 | 타입 | 설명 | 원본 변수 |
+|---|---|---|---|
+| `current_screen` | String | 현재 활성 화면 ID | `GameManager.current_screen` |
+| `current_location` | String | 현재 위치(맵) ID | `GameManager.current_location` |
+| `previous_screen` | String | 직전 화면 (복귀용) | (신규) |
+| `input_locked` | bool | 입력 잠금 여부 | (신규) |
+| `from_battle` | bool | 전투에서 돌아왔는지 | `GameManager.from_battle` |
+| `battle_victory` | bool | 직전 전투 승리 여부 | `GameManager.battle_victory` |
+
+#### 2. Party RNA — 파티 구성
+
+| 키 | 타입 | 설명 | 원본 변수 |
+|---|---|---|---|
+| `members` | Array[String] | 현재 파티 멤버 ID 목록 | `GameManager.party_members` |
+| `leader` | String | 파티 리더 ID | `GameManager.party_leader` |
+| `owned_characters` | PackedStringArray | 보유 중인 전체 캐릭터 | `GameManager.owned_characters` |
+| `current_character` | String | 현재 선택된 캐릭터 | `GameManager.current_character` |
+
+#### 3. Player Stats RNA — 플레이어 수치
+
+| 키 | 타입 | 설명 | 원본 변수 |
+|---|---|---|---|
+| `player_name` | String | 캐릭터 이름 | `GameManager.player_name` |
+| `player_hp` | int | 현재 HP | `GameManager.player_hp` |
+| `player_max_hp` | int | 최대 HP | `GameManager.player_max_hp` |
+| `player_mp` | int | 현재 MP | `GameManager.player_mp` |
+| `player_max_mp` | int | 최대 MP | `GameManager.player_max_mp` |
+| `player_attack` | int | 공격력 | `GameManager.player_attack` |
+| `level` | int | 레벨 | `GameManager.level` |
+| `experience` | int | 경험치 | `GameManager.experience` |
+
+#### 4. Economy RNA — 화폐
+
+| 키 | 타입 | 설명 | 원본 변수 |
+|---|---|---|---|
+| `coin` | int | 게임 내 화폐 | `GameManager.coin` |
+| `gem` | int | 유료 화폐 | `GameManager.gem` |
+
+> **참고**: `GameManager.gold`는 deprecated이며 `coin`과 동일. RNA에서는 `coin`만 사용한다.
+
+#### 5. World RNA — 월드 및 로컬 상태
+
+| 키 | 타입 | 설명 | 원본 변수 |
+|---|---|---|---|
+| `current_map` | String | 현재 맵 (레거시) | `GameManager.current_map` |
+| `visited_locations` | Array[String] | 방문한 위치 목록 | `GameManager.visited_locations` |
+| `location_states` | Dictionary | 맵별 로컬 RNA | `GameManager.location_states` |
+
+`location_states`의 각 항목은 로컬 DNA와 동일한 구조:
+
+```gdscript
+location_states["bluewood_village"] = {
+    "player_tile": Vector2i(11, 12),
+    # 추후 확장: npc 위치, 상자 열림 여부 등
+}
+```
+
+#### 6. Battle RNA — 전투 (임시, 저장하지 않음)
+
+| 키 | 타입 | 설명 | 원본 변수 |
+|---|---|---|---|
+| `enemy_id` | String | 적 ID | `GameManager.enemy_id` |
+| `enemy_name` | String | 적 표시 이름 | `GameManager.enemy_name` |
+| `enemy_hp` | int | 적 현재 HP | `GameManager.enemy_hp` |
+| `enemy_max_hp` | int | 적 최대 HP | `GameManager.enemy_max_hp` |
+| `enemy_attack` | int | 적 공격력 | `GameManager.enemy_attack` |
+
+#### 7. Flags RNA — 게임 플래그
+
+`_flags` Dictionary를 그대로 복사. 주요 키:
+
+| 키 | 타입 | 설명 |
+|---|---|---|
+| `prologue_complete` | bool | 프롤로그 완료 |
+| `quest_started` | bool | 퀘스트 시작 |
+| `quest_complete` | bool | 퀘스트 완료 |
+| `forest_unlocked` | bool | 숲 맵 해금 |
+| `temple_unlocked` | bool | 사원 맵 해금 |
+| `boss_defeated` | bool | 보스 처치 |
+| `wukong_unlocked` | bool | 손오공 해금 |
+| `current_part` | String | 현재 파트 ID |
+| `current_chapter` | String | 현재 챕터 ID |
+
+#### 8. System RNA — 시스템/구매 상태
+
+| 키 | 타입 | 설명 | 원본 변수 |
+|---|---|---|---|
+| `game_purchased` | bool | 게임 구매 여부 | `GameManager.game_purchased` |
+| `save_slots` | int | 보유 저장 슬롯 수 | `GameManager.save_slots` |
+
+### RNA ↔ DNA 변환 규칙
+
+```
+저장 시 (RNA → DNA):
+  rna.flow.current_screen       → dna.world.current_screen
+  rna.flow.current_location     → dna.world.current_location
+  rna.flow.from_battle          → (저장하지 않음)
+  rna.flow.battle_victory       → (저장하지 않음)
+  rna.party.*                   → dna.party.*
+  rna.player_stats.*            → dna.player_stats.*
+  rna.economy.coin              → dna.inventory.coin
+  rna.economy.gem               → dna.inventory.gem
+  rna.world.*                   → dna.world.*
+  rna.battle.*                  → (저장하지 않음)
+  rna.flags.*                   → dna.flags.*
+  rna.system.*                  → dna.system.*
+
+로드 시 (DNA → RNA):
+  dna.world.current_screen      → rna.flow.current_screen
+  dna.world.current_location    → rna.flow.current_location
+  (없음)                        → rna.flow.from_battle = false
+  (없음)                        → rna.flow.battle_victory = false
+  dna.party.*                   → rna.party.*
+  dna.player_stats.*            → rna.player_stats.*
+  dna.inventory.coin            → rna.economy.coin
+  dna.inventory.gem             → rna.economy.gem
+  dna.world.*                   → rna.world.*
+  (없음)                        → rna.battle.* = 초기값
+  dna.flags.*                   → rna.flags.*
+  dna.system.*                  → rna.system.*
+```
 
 중요:
 
 - RNA는 저장 포맷과 일대일 대응일 필요가 없다.
 - 로드 어댑터가 둘 사이를 연결한다.
+- Battle RNA, Flow의 임시 상태는 절대 DNA에 넣지 않는다.
 
 ---
 
