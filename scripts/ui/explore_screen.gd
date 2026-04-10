@@ -181,7 +181,13 @@ func _on_interactable_interacted(interactable: Interactable) -> void:
 			# NPC 대화
 			var npc_id: String = interactable.interact_data.get("npc_id", "")
 			print("  → NPC 대화: ", npc_id)
-			# TODO: 대화 시스템 연동
+			if npc_id != "":
+				var npc_registry := NPCRegistry.new()
+				var npc_data: NPCData = npc_registry.get_npc(npc_id)
+				if npc_data and npc_data.npc_type == "shop":
+					_open_shop(npc_data.shop_id)
+				else:
+					_open_dialogue(npc_id)
 		"battle":
 			# 전투 진입
 			var enemy_id: String = interactable.interact_data.get("enemy_id", "")
@@ -236,12 +242,12 @@ func _initialize_npc(npc: Actor) -> void:
 	var npc_grid := _world_to_tile(npc.position)
 	npc.set_tile(npc_grid)
 	
-	# 클릭 시그널 연결
-	npc.clicked.connect(_on_npc_clicked)
-	
 	# NPC 주변에 Interactable 생성 (대화 범위)
 	_create_npc_interactable(npc)
-	
+
+	# 이전 Actor 클릭 기반 상호작용은 버튼 기반으로 전환되었으므로 연결하지 않음
+	# (클릭 이벤트는 이제 Interactable의 버튼으로 처리)
+
 	# 랜덤 배회 타이머 추가
 	var wander_timer := Timer.new()
 	wander_timer.wait_time = randf_range(2.0, 5.0)  # 2~5초 랜덤

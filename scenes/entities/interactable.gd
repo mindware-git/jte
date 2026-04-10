@@ -37,7 +37,6 @@ func _ready() -> void:
 	_setup_collision_size()
 	_interaction_button.visible = false
 	_interaction_button.pressed.connect(_on_button_pressed)
-	input_event.connect(_on_input_event)
 
 
 func _setup_collision_size() -> void:
@@ -75,12 +74,6 @@ func _on_body_exited(body: Node2D) -> void:
 		# 버튼 숨기기
 		if _interaction_button:
 			_interaction_button.visible = false
-
-
-func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if _player_in_range and can_interact():
-			_interact()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
