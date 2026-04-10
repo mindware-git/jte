@@ -8,7 +8,7 @@ extends Area2D
 
 signal interacted(interactable: Interactable)
 
-## 상호작용 타입 ("npc", "chest", "investigate", "battle")
+## 상호작용 타입 ("npc", "treasure", "investigate", "battle", "shop", "puzzle", "event")
 @export var interact_type: String = ""
 
 ## 상호작용 데이터 (타입별로 다름)
@@ -26,12 +26,17 @@ var _has_interacted: bool = false
 ## 플레이어가 범위 내에 있는지
 var _player_in_range: bool = false
 
+## 상호작용 버튼
+@onready var _interaction_button: Button = $Button
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Lifecycle
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _ready() -> void:
 	_setup_collision_size()
+	_interaction_button.visible = false
+	_interaction_button.pressed.connect(_on_button_pressed)
 	input_event.connect(_on_input_event)
 
 
@@ -53,6 +58,10 @@ func _on_body_entered(body: Node2D) -> void:
 		_player_in_range = true
 		print("Interactable: 플레이어 진입 - ", name)
 		
+		# 버튼 표시
+		if _interaction_button:
+			_interaction_button.visible = true
+		
 		# battle 타입은 자동 발동
 		if interact_type == "battle" and can_interact():
 			_interact()
@@ -62,6 +71,10 @@ func _on_body_exited(body: Node2D) -> void:
 	if body is Actor and body.current_role == Actor.Role.PLAYER:
 		_player_in_range = false
 		print("Interactable: 플레이어 이탈 - ", name)
+		
+		# 버튼 숨기기
+		if _interaction_button:
+			_interaction_button.visible = false
 
 
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
@@ -87,8 +100,17 @@ func can_interact() -> bool:
 	return _player_in_range
 
 
+func _on_button_pressed() -> void:
+	if can_interact():
+		_interact()
+
+
 func _interact() -> void:
 	_has_interacted = true
+	
+	# 버튼 숨기기
+	if _interaction_button:
+		_interaction_button.visible = false
 	
 	# battle 타입은 RNA에 플래그 저장
 	if interact_type == "battle" and battle_id != "":

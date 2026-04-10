@@ -1,4 +1,4 @@
-class_name OldMan
+class_name BluffingElder
 extends RefCounted
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -7,14 +7,14 @@ extends RefCounted
 # 비싼 약주를 사주면 봉인 구절 힌트를 준다
 # ═══════════════════════════════════════════════════════════════════════════════
 
-const NPC_ID := "old_man"
+const NPC_ID := "bluffing_elder"
 
 
 static func get_npc_data() -> NPCData:
 	return NPCData.create(
 		NPC_ID,
 		"NPC_BLUFFING_ELDER",
-		"bluewood_village",
+		"tavern",
 		"DIALOGUE_BLUFFING_ELDER_FIRST"
 	)
 

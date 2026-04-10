@@ -6,6 +6,19 @@ extends Node
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# World Constants
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## 타일 크기 (픽셀)
+const TILE_SIZE := 32
+
+## 그리드 크기 (픽셀) - 충돌 영역, 캐릭터 배치 단위
+const GRID_SIZE := 64
+
+## 그리드당 타일 수
+const TILES_PER_GRID := GRID_SIZE / TILE_SIZE  # 2
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Enums
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -101,16 +114,6 @@ class ShopItem:
 	var currency: CurrencyType = CurrencyType.COIN
 	var is_premium: bool = false
 
-## 맵 데이터
-class MapData:
-	var id: String = ""
-	var map_name: String = ""
-	var alias: String = ""
-	var element: ElementType = ElementType.EARTH
-	var max_players: int = 8
-	var has_teleport: bool = false
-	var has_hazards: bool = true
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # Signals
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -205,7 +208,6 @@ var save_slots: int = 1
 var current_state: GameState = GameState.NONE
 var previous_state: GameState = GameState.NONE
 var current_match: MatchData = null
-var current_map_data: MapData = null
 var players: Array[PlayerData] = []
 var local_player: PlayerData = null
 

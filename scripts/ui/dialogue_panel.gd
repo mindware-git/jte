@@ -1,5 +1,5 @@
 class_name DialoguePanel
-extends Control
+extends CanvasLayer
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # DialoguePanel
@@ -23,6 +23,7 @@ var _npc_data: NPCData
 var _result: Dictionary = {}
 
 ## UI 컴포넌트
+var _container: Control
 var _overlay: ColorRect
 var _panel: PanelContainer
 var _name_label: Label
@@ -36,10 +37,13 @@ var _item_message: PanelContainer
 
 func _init(p_npc_id: String = "old_monk") -> void:
 	_npc_id = p_npc_id
+	layer = 10  # 최상위 레이어
 
 
 func _ready() -> void:
-	anchors_preset = Control.PRESET_FULL_RECT
+	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	get_tree().paused = true
+	
 	_result = {}
 	_registry = NPCRegistry.new()
 	_load_npc()
@@ -67,19 +71,24 @@ func _load_npc() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _create_ui() -> void:
+	# 최상위 컨테이너 (CanvasLayer 안에 Control 필요)
+	_container = Control.new()
+	_container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_container.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_container)
+	
 	# 반투명 오버레이 (전체 화면)
 	_overlay = ColorRect.new()
 	_overlay.color = Color(0, 0, 0, 0.6)
 	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(_overlay)
+	_container.add_child(_overlay)
 	
-	# 대화 패널 (하단)
+	# 대화 패널 (중앙)
 	_panel = PanelContainer.new()
-	_panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_panel.set_anchors_preset(Control.PRESET_CENTER)
 	_panel.custom_minimum_size = Vector2(1000, 300)
-	_panel.position = Vector2(140, 350)
-	add_child(_panel)
+	_container.add_child(_panel)
 	
 	var vbox := VBoxContainer.new()
 	_panel.add_child(vbox)
@@ -119,9 +128,8 @@ func _create_item_message() -> void:
 	_item_message = PanelContainer.new()
 	_item_message.set_anchors_preset(Control.PRESET_CENTER)
 	_item_message.custom_minimum_size = Vector2(400, 80)
-	_item_message.position = Vector2(440, 300)
 	_item_message.visible = false
-	add_child(_item_message)
+	_container.add_child(_item_message)
 	
 	var label := Label.new()
 	label.name = "MessageLabel"
@@ -207,6 +215,12 @@ func _execute_actions(actions: Array[DialogueData.DialogueAction]) -> void:
 				print("HP 회복: %d" % amount)
 				_result["heal_amount"] = amount
 			
+			DialogueData.ActionType.TAKE_MONEY:
+				var amount: int = action.value if action.value is int else 0
+				GameManager.coin -= amount
+				print("골드 차감: %d" % amount)
+				_result["money_taken"] = amount
+			
 			DialogueData.ActionType.END_DIALOGUE:
 				pass  # 대화 종료는 별도 처리
 
@@ -227,5 +241,6 @@ func _show_item_acquired(item_id: String, count: int) -> void:
 
 
 func _close() -> void:
+	get_tree().paused = false
 	dialogue_finished.emit(_result)
 	queue_free()

@@ -1,21 +1,21 @@
-[gd_scene format=4 uid="uid://bdukdtuk4jpgj"]
+[gd_scene format=4 uid="uid://m8sfc5ds8moj"]
 
-[ext_resource type="TileSet" uid="uid://brh3yq3ty0set" path="res://asset/tileset/grass_tileset.tres" id="1_kw4q3"]
-[ext_resource type="PackedScene" uid="uid://pvnmssu2aymg" path="res://scenes/entities/actor.tscn" id="2_3ofpd"]
-[ext_resource type="PackedScene" uid="uid://j1c7o4lq8k1g" path="res://scenes/entities/gate.tscn" id="3_c5w82"]
+[ext_resource type="TileSet" uid="uid://brh3yq3ty0set" path="res://asset/tileset/grass_tileset.tres" id="1_gmijc"]
+[ext_resource type="PackedScene" uid="uid://pvnmssu2aymg" path="res://scenes/entities/actor.tscn" id="2_mjcgh"]
+[ext_resource type="PackedScene" uid="uid://j1c7o4lq8k1g" path="res://scenes/entities/gate.tscn" id="3_81k34"]
 
-[node name="Tavern" type="Node2D" unique_id=360695685]
+[node name="BluewoodShop" type="Node2D" unique_id=360695685]
 
 [node name="GroundLayer" type="TileMapLayer" parent="." unique_id=1299999254]
 tile_map_data = PackedByteArray("AAALAAwAAAAAAAQAAAALAA0AAAAAAAQAAAALAA4AAAAAAAQAAAALAA8AAAAAAAQAAAAMAAwAAAAAAAQAAAAMAA0AAAAAAAQAAAAMAA4AAAAAAAQAAAAMAA8AAAAAAAQAAAANAAwAAAAAAAQAAAANAA0AAAAAAAQAAAANAA4AAAAAAAQAAAANAA8AAAAAAAQAAAAOAAwAAAAAAAQAAAAOAA0AAAAAAAQAAAAOAA4AAAAAAAQAAAAOAA8AAAAAAAQAAAAPAAwAAAAAAAQAAAAPAA0AAAAAAAQAAAAPAA4AAAAAAAQAAAAPAA8AAAAAAAQAAAAQAAwAAAAAAAQAAAAQAA0AAAAAAAQAAAAQAA4AAAAAAAQAAAAQAA8AAAAAAAQAAAARAAwAAAAAAAQAAAARAA0AAAAAAAQAAAARAA4AAAAAAAQAAAARAA8AAAAAAAQAAAASAAwAAAAAAAQAAAASAA0AAAAAAAQAAAASAA4AAAAAAAQAAAASAA8AAAAAAAQAAAA=")
-tile_set = ExtResource("1_kw4q3")
+tile_set = ExtResource("1_gmijc")
 
 [node name="NPC" type="Node2D" parent="." unique_id=2087789547]
 
-[node name="BluffingElder" parent="NPC" unique_id=987135416 instance=ExtResource("2_3ofpd")]
+[node name="BluewoodShopKeeper" parent="NPC" unique_id=987135416 instance=ExtResource("2_mjcgh")]
 
 [node name="Gate" type="Node2D" parent="." unique_id=1174235281]
 
-[node name="BluewoodVillageGate" parent="Gate" unique_id=1891344912 instance=ExtResource("3_c5w82")]
+[node name="BluewoodVillageGate" parent="Gate" unique_id=1891344912 instance=ExtResource("3_81k34")]
 position = Vector2(521, 504)
 target_location = "bluewood_village"

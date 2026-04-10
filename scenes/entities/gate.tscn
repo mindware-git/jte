@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://coy5i2j0b2wwr" path="res://scenes/entities/gate.gd" id="1_e3cg7"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_idymu"]
+size = Vector2(64, 64)
 
 [node name="Gate" type="Area2D" unique_id=1891344912]
 script = ExtResource("1_e3cg7")

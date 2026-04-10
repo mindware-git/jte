@@ -49,6 +49,7 @@ enum ActionType {
 	SET_FLAG,    # 플래그 설정
 	START_BATTLE, # 전투 시작
 	HEAL,        # 회복
+	TAKE_MONEY,  # 골드 차감
 	END_DIALOGUE # 대화 종료
 }
 
@@ -85,6 +86,13 @@ class DialogueAction:
 	static func heal(amount: int) -> DialogueAction:
 		var action := DialogueAction.new()
 		action.action_type = ActionType.HEAL
+		action.value = amount
+		return action
+	
+	
+	static func take_money(amount: int) -> DialogueAction:
+		var action := DialogueAction.new()
+		action.action_type = ActionType.TAKE_MONEY
 		action.value = amount
 		return action
 	

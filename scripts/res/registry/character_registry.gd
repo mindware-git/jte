@@ -29,17 +29,7 @@ func _register_sanzang() -> void:
 	data.description = "동천취경의 여정을 이끄는 젊은 승려"
 	# 능력치 (힐러/서포터)
 	data.max_hp = 90
-	data.max_mp = 120
-	data.max_bp = 30
-	data.melee_power = 8
-	data.ranged_power = 15
-	data.max_speed = 180.0
-	data.rotation_speed = 5.0
-	data.acceleration = 10.0
-	data.is_flying = false
 	
-	_characters[data.id] = data
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 손오공 (Wukong)
@@ -54,14 +44,6 @@ func _register_wukong() -> void:
 	# 능력치 (딜러/전열)
 	data.max_hp = 130
 	data.max_mp = 80
-	data.max_bp = 50
-	data.melee_power = 22
-	data.ranged_power = 18
-	data.max_speed = 260.0
-	data.rotation_speed = 7.0
-	data.acceleration = 14.0
-	data.is_flying = true  # 근운으로 비행 가능
-	
 	_characters[data.id] = data
 
 
@@ -103,13 +85,6 @@ func _register_enemy_slime() -> void:
 	# 능력치 (약한 적)
 	data.max_hp = 30
 	data.max_mp = 0
-	data.max_bp = 0
-	data.melee_power = 5
-	data.ranged_power = 0
-	data.max_speed = 80.0
-	data.rotation_speed = 3.0
-	data.acceleration = 5.0
-	data.is_flying = false
 	
 	_characters[data.id] = data
 

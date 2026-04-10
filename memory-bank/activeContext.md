@@ -2,106 +2,104 @@
 
 ## 현재 작업 포커스
 
-현재 프로젝트는 **파트 1 콘텐츠 구현 단계**입니다. 탐험 시스템의 핵심인 Gate와 Interactable 시스템이 완성되었으며, Registry 시스템이 정리되었습니다.
+현재 프로젝트는 **상점 시스템 구현 완료** 단계입니다. NPC 클릭 시 NPC 타입에 따라 상점 또는 대화가 열리는 시스템이 구현되었습니다.
 
 ## 최근 변경 사항
 
-### 2026-04-09 Registry 시스템 정리
-- **CharacterRegistry**: 레거시 캐릭터(gyro, shamu, enemy_slime) 제거, 동유기 캐릭터만 유지 (sanzang, wukong, bajie, sandy)
-- **LocationRegistry**: 삭제 - 씬 기반으로 대체
-- **NPCRegistry**: 유지 - 대화 데이터 관리 전담
+### 2026-04-10 상점 시스템 구현
+- **ShopData 간소화**: 불필요한 필드 제거, `id`, `name_key`, `location_id`, `item_ids`만 유지
+- **ShopRegistry**: `get_shop_by_location()` 함수로 위치별 상점 조회
+- **BlueWoodShop**: 청목진 상점 (`bluewood_shop`), potion 1개 판매
 
-### 2026-04-09 NPC Registry → Actor/Interactable 통합 설계
-```
-Location Scene (tscn)
-├── Actor (NPC) ──────→ 시각적 표현, 이동
-├── Gate ────────────→ 위치 전환
-└── Interactable ────→ 클릭 감지
+### 2026-04-10 NPC 시스템 확장
+- **NPCData 확장**: `npc_type` ("shop", "dialogue", "quest"), `shop_id` 필드 추가
+- **BlueWoodShopKeeper**: 청목진 상점 주인 NPC
+  - `npc_type = "shop"`, `shop_id = "bluewood_shop"`
+  - `location_id = "bluewood_shop"`
+- **NPCRegistry**: BlueWoodShopKeeper 등록
 
-ExploreScreen
-├── NPCRegistry ────→ 대화 데이터 조회
-└── DialogueUI ─────→ 대화 표시
-```
-
-### 2026-04-09 전투 시스템 개선
-- **RNA 데이터 전달 문제 해결**: `to_rna()`와 `_setup_battle()` 간 키 불일치 수정
-- **전투 진입 문제 해결**: `main.gd`에서 `add_child()` 후 `setup()` 호출 순서 변경
-- **전투 종료 후 화면 전환**: 승리 시 explore, 패배 시 title 화면으로 전환
+### 2026-04-10 ExploreScreen 수정
+- **_on_npc_clicked()**: NPC 타입별 처리
+  - `shop` → ShopPanel 열기
+  - 기타 → 대화 시스템 (TODO)
+- **_open_shop()**: ShopPanel 인스턴스 생성
 
 ### 파일 구조
 ```
 scripts/res/
-├── character_data.gd
-├── npc_data.gd
-├── item_data.gd
-├── skill_data.gd
-├── battle_data.gd
-├── save_data.gd
+├── shop_data.gd              # 상점 데이터 (간소화)
+├── npc_data.gd               # NPC 데이터 (npc_type, shop_id 추가)
 └── registry/
-    ├── character_registry.gd  # 동유기 캐릭터만
-    ├── npc_registry.gd        # 대화 데이터 관리
-    ├── skill_registry.gd
-    └── item_registry.gd
+    ├── shop_registry.gd      # 상점 레지스트리
+    ├── npc_registry.gd       # NPC 레지스트리
+    ├── shops/
+    │   └── bluewood_shop.gd  # 청목진 상점
+    └── npcs/
+        └── bluewood_shop_keeper.gd  # 상점 주인 NPC
 
-scenes/entities/
-├── gate.tscn              # 맵 이동용 Area2D
-├── gate.gd                # Gate 로직
-├── interactable.tscn      # 상호작용용 Area2D
-├── interactable.gd        # Interactable 로직
-├── actor.tscn             # 캐릭터 (Player, NPC, Enemy)
-└── actor.gd               # Actor 로직
+scenes/locations/
+└── bluewood_shop.tscn        # 청목진 상점 씬
+
+scripts/ui/
+├── explore_screen.gd         # NPC 클릭 처리
+└── shop_panel.gd             # 상점 UI
 ```
 
 ## 다음 단계
 
 1. **대화 시스템 연동**
    - NPCRegistry에서 대화 데이터 조회
-   - DialogueUI 구현
+   - DialoguePanel 구현
 
-2. **전투 시스템 완성**
-   - 전투 UI 개선
-   - 스킬 효과 구현
+2. **상점 확장**
+   - 더 많은 아이템 추가
+   - 다른 지역 상점 구현
 
-3. **저장 시스템 구현**
-   - DNA/RNA 변환 로직
+3. **테스트 코드 작성**
+   - ShopRegistry 테스트
+   - NPCRegistry 테스트
 
 ## 활성 결정 사항
 
-### Registry 책임 분리
-| Registry | 책임 |
-|----------|------|
-| CharacterRegistry | 캐릭터 데이터 (스탯, 속성) |
-| NPCRegistry | NPC 대화 데이터 |
-| SkillRegistry | 스킬 데이터 |
-| ItemRegistry | 아이템 데이터 |
+### NPC 타입
+| 타입 | 설명 | 동작 |
+|------|------|------|
+| shop | 상점 NPC | ShopPanel 열기 |
+| dialogue | 대화 NPC | 대화 시스템 연동 |
+| quest | 퀘스트 NPC | 퀘스트 시스템 연동 |
 
-### 상호작용 시스템 설계
-- Gate: 맵 이동 전용, 플레이어 접촉 시 자동 발동
-- Interactable: 클릭 기반 상호작용, NPC/상자/조사 포인트
+### 상점 시스템 특징
+- **location_id 기반**: 씬 이름과 상점 ID 매핑
+- **아이템 가격**: ItemData의 `price_buy`, `price_sell` 사용
+- **ShopPanel**: 구매/판매 탭, 코인 표시
 
-### 화면 관리
-- `main.gd`가 모든 화면 전환 관리
-- 화면은 동적 생성, `.tscn` 파일 최소화
+### 네이밍 컨벤션
+- NPC 이름: `BluewoodShopKeeper` → `to_snake_case()` → `bluewood_shop_keeper`
+- 상점 ID: `bluewood_shop`
+- 씬 이름: `bluewood_shop.tscn`
 
 ## 중요 패턴
 
-### 네이밍 컨벤션
-- 변수: `bluewood` 스타일 (예: `bluewood_account`)
-- 캐릭터 이름: 그대로 사용 (예: `sanzang`)
+### NPC 클릭 흐름
+1. NPC 클릭 → `_on_npc_clicked()`
+2. NPCRegistry에서 NPCData 조회
+3. `npc_type` 확인
+4. `shop` → `_open_shop(shop_id)`
+5. ShopPanel 표시
+
+### 상점 데이터 조회
+```gdscript
+var shop_registry := ShopRegistry.new()
+var shop := shop_registry.get_shop_by_location("bluewood_shop")
+```
 
 ### 테스트
 - GUT 프레임워크 사용
 - 실행: `godot --headless --path . -s addons/gut/gut_cmdln.gd`
-
-### 문서 참조
-- `docs/ARCHITECTURE.md` - 전체 아키텍처
-- `docs/BATTLE_ARCHITECTURE.md` - 전투 시스템
-- `docs/SAVE_LOAD_ARCHITECTURE.md` - 저장 시스템
+- 현재: 42/44 통과 (SkillData 관련 2개 실패)
 
 ## 프로젝트 인사이트
 
-- **탐험이 핵심**: 전투는 탐험의 연장선
-- **모바일 우선**: 모든 UX는 터치 기준
-- **AI 협업**: Spec → Test → Implementation 흐름 유지
-- **오버레이 방식**: 화면 전환 없이 패널 표시
-- **Registry 분리**: 데이터 타입별 전담 관리
+- **NPC 타입 시스템**: 하나의 NPC 클래스로 다양한 역할 처리
+- **Registry 패턴**: 모든 데이터는 Registry에서 관리
+- **위치 기반 상점**: 씬 이름으로 상점 자동 매핑

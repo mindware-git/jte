@@ -13,14 +13,6 @@ enum ItemType {
 	CONSUMABLE   ## 소모품
 }
 
-enum ItemRarity {
-	COMMON,      ## 일반
-	UNCOMMON,    ## 고급
-	RARE,        ## 희귀
-	EPIC,        ## 영웅
-	LEGENDARY    ## 전설
-}
-
 enum ItemTargetType {
 	SELF,        ## 자기 자신
 	ALLY,        ## 아군 대상
@@ -31,98 +23,29 @@ enum ItemTargetType {
 var id: String = ""
 var name: String = ""
 var description: String = ""
+
 var type: ItemType = ItemType.WEAPON
-var rarity: ItemRarity = ItemRarity.COMMON
-var price_coin: int = 0
+var price_buy: int = 0
+var price_sell: int = 0
 var price_gem: int = 0
 
 # 스탯 보너스
-var stat_bonus: Dictionary = {}  # { "attack": 5, "hp": 10, "mp": 5 }
+@export var st_pow: int = 10      # Power - 물리 공격력
+@export var st_int: int = 10 # Intelligence - 마법 (예약어 회피)
+@export var st_dex: int = 10      # Dexterity - 민첩
+@export var st_att: int = 0       # Attack - 공격력 보정
+@export var st_def: int = 5  # Defense - 방어력 (예약어 회피)
+@export var st_luck: int = 5      # Luck - 운
+@export var st_ap: int = 3        # Action Point - 행동점수
 
-# 아이콘 (나중에 리소스 경로)
-var icon_path: String = ""
+var applicable_units: Array[String] = []
+var applicable_shop: Array[String] = []
 
-# 전투 사용 대상
-var target_type: ItemTargetType = ItemTargetType.SELF
-var use_range: int = 0  # 0이면 자기 자신, 양수면 맨해튼 사거리
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Serialization
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func to_dict() -> Dictionary:
-	return {
-		"id": id,
-		"name": name,
-		"description": description,
-		"type": type,
-		"rarity": rarity,
-		"price_coin": price_coin,
-		"price_gem": price_gem,
-		"stat_bonus": stat_bonus,
-		"icon_path": icon_path,
-	}
+# 전투용 필드
+var target_type: ItemTargetType = ItemTargetType.SELF  # 대상 타입 (기본: 자신)
+var use_range: int = 0  # 사용 범위 (칸 수, 기본: 0)
 
 
-func from_dict(dict: Dictionary) -> void:
-	id = dict.get("id", "")
-	name = dict.get("name", "")
-	description = dict.get("description", "")
-	type = dict.get("type", ItemType.WEAPON)
-	rarity = dict.get("rarity", ItemRarity.COMMON)
-	price_coin = dict.get("price_coin", 0)
-	price_gem = dict.get("price_gem", 0)
-	stat_bonus = dict.get("stat_bonus", {})
-	icon_path = dict.get("icon_path", "")
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Display Helpers
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func get_type_name() -> String:
-	match type:
-		ItemType.WEAPON: return "무기"
-		ItemType.ARMOR: return "방어구"
-		ItemType.ACCESSORY: return "장신구"
-		ItemType.CONSUMABLE: return "소모품"
-		_: return "기타"
-
-
-func get_rarity_name() -> String:
-	match rarity:
-		ItemRarity.COMMON: return "일반"
-		ItemRarity.UNCOMMON: return "고급"
-		ItemRarity.RARE: return "희귀"
-		ItemRarity.EPIC: return "영웅"
-		ItemRarity.LEGENDARY: return "전설"
-		_: return "일반"
-
-
+## 희귀도 색상 반환
 func get_rarity_color() -> Color:
-	match rarity:
-		ItemRarity.COMMON: return Color(0.7, 0.7, 0.7)
-		ItemRarity.UNCOMMON: return Color(0.3, 0.8, 0.3)
-		ItemRarity.RARE: return Color(0.3, 0.5, 1.0)
-		ItemRarity.EPIC: return Color(0.7, 0.3, 0.9)
-		ItemRarity.LEGENDARY: return Color(1.0, 0.7, 0.2)
-		_: return Color(0.7, 0.7, 0.7)
-
-
-func get_stat_display() -> String:
-	var parts: Array[String] = []
-	for stat_name in stat_bonus.keys():
-		var value: int = stat_bonus[stat_name]
-		var stat_display := _get_stat_display_name(stat_name)
-		parts.append("%s +%d" % [stat_display, value])
-	return " | ".join(parts)
-
-
-func _get_stat_display_name(stat: String) -> String:
-	match stat:
-		"hp": return "HP"
-		"mp": return "MP"
-		"attack": return "공격력"
-		"defense": return "방어력"
-		"speed": return "속도"
-		_: return stat
+	return Color.WHITE  # 기본 색상

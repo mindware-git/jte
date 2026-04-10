@@ -324,13 +324,13 @@ func _create_item_menu() -> void:
 	panel.add_child(vbox)
 	
 	# 아이템 목록 (레지스트리에서 가져오기)
-	var all_items := _item_registry.get_all_items()
-	for item: ItemData in all_items:
-		var btn := Button.new()
-		btn.text = "%s" % item.name
-		btn.custom_minimum_size = Vector2(120, 40)
-		btn.pressed.connect(_on_item_selected.bind(item.id))
-		vbox.add_child(btn)
+	# var all_items := _item_registry.get_all_items()
+	# for item: ItemData in all_items:
+	# 	var btn := Button.new()
+	# 	btn.text = "%s" % item.name
+	# 	btn.custom_minimum_size = Vector2(120, 40)
+	# 	btn.pressed.connect(_on_item_selected.bind(item.id))
+	# 	vbox.add_child(btn)
 	
 	# 취소 버튼
 	var cancel_btn := Button.new()
@@ -487,62 +487,64 @@ func _get_skill_range_pattern(skill: SkillData) -> Array[Vector2i]:
 func _on_item_selected(item_id: String) -> void:
 	if _selected_actor == null:
 		return
+	return
 	
-	var item := _item_registry.get_item(item_id)
-	if not item:
-		_log_label.text = "아이템을 찾을 수 없습니다."
-		_hide_item_menu()
-		return
-	
-	_hide_item_menu()
-	_selected_item_id = item_id
-	_selected_action = BattleData.ActionType.ITEM
-	
-	# target_type에 따라 분기
-	match item.target_type:
-		ItemData.ItemTargetType.SELF:
-			# 자기 자신 대상: 칸 선택 없이 바로 확인
-			_selected_target = _selected_actor
-			_show_confirm_dialog(
-				"%s 사용?" % item.name,
-				_selected_actor.grid_pos,
-				_on_item_confirmed
-			)
-		ItemData.ItemTargetType.ALLY:
-			# 아군 대상: 아군 위치 칸 범위 표시
-			_log_label.text = "대상 아군을 선택하세요."
-			_show_item_range_ally()
-		ItemData.ItemTargetType.ENEMY:
-			# 적 대상: 적 위치 칸 범위 표시
-			_log_label.text = "대상 적을 선택하세요."
-			_show_item_range_enemy(item)
-		ItemData.ItemTargetType.ALL_ALLY:
-			# 전체 아군: 바로 확인
-			_selected_target = _selected_actor
-			_show_confirm_dialog(
-				"%s을(를) 전체 아군에게 사용?" % item.name,
-				_selected_actor.grid_pos,
-				_on_item_confirmed
-			)
+#	var item := _item_registry.get_item(item_id)
+#	if not item:
+#		_log_label.text = "아이템을 찾을 수 없습니다."
+#		_hide_item_menu()
+#		return
+#	
+#	_hide_item_menu()
+#	_selected_item_id = item_id
+#	_selected_action = BattleData.ActionType.ITEM
+#	
+#	# target_type에 따라 분기
+#	match item.target_type:
+#		ItemData.ItemTargetType.SELF:
+#			# 자기 자신 대상: 칸 선택 없이 바로 확인
+#			_selected_target = _selected_actor
+#			_show_confirm_dialog(
+#				"%s 사용?" % item.name,
+#				_selected_actor.grid_pos,
+#				_on_item_confirmed
+#			)
+#		ItemData.ItemTargetType.ALLY:
+#			# 아군 대상: 아군 위치 칸 범위 표시
+#			_log_label.text = "대상 아군을 선택하세요."
+#			_show_item_range_ally()
+#		ItemData.ItemTargetType.ENEMY:
+#			# 적 대상: 적 위치 칸 범위 표시
+#			_log_label.text = "대상 적을 선택하세요."
+#			_show_item_range_enemy(item)
+#		ItemData.ItemTargetType.ALL_ALLY:
+#			# 전체 아군: 바로 확인
+#			_selected_target = _selected_actor
+#			_show_confirm_dialog(
+#				"%s을(를) 전체 아군에게 사용?" % item.name,
+#				_selected_actor.grid_pos,
+#				_on_item_confirmed
+#			)
 
 
 func _show_item_range_ally() -> void:
 	if _selected_actor == null:
 		return
+	return
 	
 	# 아군 위치만 하이라이트 (맨해튼 거리 내)
-	var item := _item_registry.get_item(_selected_item_id)
-	if not item:
-		return
-	
-	var range_pattern: Array[Vector2i] = []
-	for x in range(-item.use_range, item.use_range + 1):
-		for y in range(-item.use_range, item.use_range + 1):
-			if abs(x) + abs(y) <= item.use_range:
-				range_pattern.append(Vector2i(x, y))
-	
-	# 점유되지 않은 칸은 제외 (아군이 있는 칸만 유효)
-	_show_range_cells(_selected_actor.grid_pos, range_pattern, [], RANGE_COLOR_ALLY)
+	#var item := _item_registry.get_item(_selected_item_id)
+	#if not item:
+		#return
+	#
+	#var range_pattern: Array[Vector2i] = []
+	#for x in range(-item.use_range, item.use_range + 1):
+		#for y in range(-item.use_range, item.use_range + 1):
+			#if abs(x) + abs(y) <= item.use_range:
+				#range_pattern.append(Vector2i(x, y))
+	#
+	## 점유되지 않은 칸은 제외 (아군이 있는 칸만 유효)
+	#_show_range_cells(_selected_actor.grid_pos, range_pattern, [], RANGE_COLOR_ALLY)
 
 
 func _show_item_range_enemy(item: ItemData) -> void:
@@ -658,16 +660,16 @@ func _on_skill_confirmed() -> void:
 func _on_item_confirmed() -> void:
 	if _selected_actor == null:
 		return
-	
-	var item := _item_registry.get_item(_selected_item_id)
-	if not item:
-		return
-	
-	_hide_battle_grid()
-	
-	# 아이템 효과 적용
-	var target := _selected_target if _selected_target else _selected_actor
-	_execute_item_effect(item, target)
+	return
+	#var item := _item_registry.get_item(_selected_item_id)
+	#if not item:
+		#return
+	#
+	#_hide_battle_grid()
+	#
+	## 아이템 효과 적용
+	#var target := _selected_target if _selected_target else _selected_actor
+	#_execute_item_effect(item, target)
 
 
 func _execute_item_effect(item: ItemData, target: BattleData.Unit) -> void:
@@ -786,25 +788,26 @@ func _on_grid_cell_clicked(grid_pos: Vector2i) -> void:
 				)
 		
 		BattleData.ActionType.ITEM:
-			var item := _item_registry.get_item(_selected_item_id)
-			if not item:
-				return
-			
-			# 타겟 찾기 (아이템 타입에 따라)
-			var search_side := "any"
-			if item.target_type == ItemData.ItemTargetType.ALLY:
-				search_side = "ally"
-			elif item.target_type == ItemData.ItemTargetType.ENEMY:
-				search_side = "enemy"
-			
-			var target_unit := _find_unit_at(grid_pos, search_side)
-			if target_unit != null:
-				_selected_target = target_unit
-				_show_confirm_dialog(
-					"%s에게 %s 사용?" % [target_unit.display_name, item.name],
-					grid_pos,
-					_on_item_confirmed
-				)
+			return
+			#var item := _item_registry.get_item(_selected_item_id)
+			#if not item:
+				#return
+			#
+			## 타겟 찾기 (아이템 타입에 따라)
+			#var search_side := "any"
+			#if item.target_type == ItemData.ItemTargetType.ALLY:
+				#search_side = "ally"
+			#elif item.target_type == ItemData.ItemTargetType.ENEMY:
+				#search_side = "enemy"
+			#
+			#var target_unit := _find_unit_at(grid_pos, search_side)
+			#if target_unit != null:
+				#_selected_target = target_unit
+				#_show_confirm_dialog(
+					#"%s에게 %s 사용?" % [target_unit.display_name, item.name],
+					#grid_pos,
+					#_on_item_confirmed
+				#)
 
 
 func _show_range_cells(center: Vector2i, range_pattern: Array[Vector2i], occupied: Array[Vector2i] = [], color: Color = Color(1, 0.5, 0.5, 0.3)) -> void:

@@ -14,111 +14,24 @@ func _init() -> void:
 
 
 func _register_all_items() -> void:
-	_register_consumables()
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Consumables (소모품)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func _register_consumables() -> void:
-	# 회복약 - Potion: HP 50 회복 (아군 대상)
-	_register_item(_create_targeted_consumable(
-		"potion",
-		"Potion",
-		"Restores 50 HP.",
-		50, {"hp": 50},
-		ItemData.ItemTargetType.ALLY, 99
-	))
-	
-	# 에테르 - Ether: MP 30 회복 (아군 대상)
-	_register_item(_create_targeted_consumable(
-		"ether",
-		"Ether",
-		"Restores 30 MP.",
-		100, {"mp": 30},
-		ItemData.ItemTargetType.ALLY, 99
-	))
-	
-	# 해독제 - Antidote: 상태이상 해제 (아군 대상)
-	_register_item(_create_targeted_consumable(
-		"antidote",
-		"Antidote",
-		"Cures status ailments.",
-		100, {"status_cure": 1},
-		ItemData.ItemTargetType.ALLY, 99
-	))
-	
-	# 화염탄 - Fire Bomb: 적에게 40 데미지 (적 대상, 사거리 5)
-	_register_item(_create_targeted_consumable(
-		"fire_bomb",
-		"Fire Bomb",
-		"Deals 40 damage to enemy.",
-		80, {"damage": 40},
-		ItemData.ItemTargetType.ENEMY, 5
-	))
-	
-	# 연막탄 - Smoke Ball: 자신에게 사용 (회피율 증가)
-	_register_item(_create_targeted_consumable(
-		"smoke_ball",
-		"Smoke Ball",
-		"Creates smokescreen, increases evasion.",
-		60, {"evasion": 1},
-		ItemData.ItemTargetType.SELF, 0
-	))
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Factory Methods
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func _create_consumable(
-	p_id: String,
-	p_name: String,
-	p_desc: String,
-	p_price: int,
-	p_effect: Dictionary
-) -> ItemData:
-	var item := ItemData.new()
-	item.id = p_id
-	item.name = p_name
-	item.description = p_desc
-	item.type = ItemData.ItemType.CONSUMABLE
-	item.rarity = ItemData.ItemRarity.COMMON
-	item.price_coin = p_price
-	item.stat_bonus = p_effect
-	return item
-
-
-func _create_targeted_consumable(
-	p_id: String,
-	p_name: String,
-	p_desc: String,
-	p_price: int,
-	p_effect: Dictionary,
-	p_target: ItemData.ItemTargetType,
-	p_range: int
-) -> ItemData:
-	var item := _create_consumable(p_id, p_name, p_desc, p_price, p_effect)
-	item.target_type = p_target
-	item.use_range = p_range
-	return item
+	# 기본 아이템 등록
+	_register_item(_create_potion())
+	_register_item(_create_ether())
+	_register_item(_create_antidote())
+	_register_item(_create_fire_bomb())
+	_register_item(_create_smoke_ball())
 
 
 func _register_item(item: ItemData) -> void:
 	_items[item.id] = item
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 조회 메서드
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func get_item(id: String) -> ItemData:
-	return _items.get(id)
+func get_item(item_id: String) -> ItemData:
+	return _items.get(item_id)
 
 
-func has_item(id: String) -> bool:
-	return _items.has(id)
+func has_item(item_id: String) -> bool:
+	return _items.has(item_id)
 
 
 func get_all_items() -> Array[ItemData]:
@@ -126,3 +39,72 @@ func get_all_items() -> Array[ItemData]:
 	for key in _items.keys():
 		result.append(_items[key])
 	return result
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Item Factory Methods
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _create_potion() -> ItemData:
+	var item := ItemData.new()
+	item.id = "potion"
+	item.name = "회복약"
+	item.description = "HP를 50 회복한다."
+	item.type = ItemData.ItemType.CONSUMABLE
+	item.price_buy = 50
+	item.price_sell = 25
+	item.target_type = ItemData.ItemTargetType.ALLY
+	item.use_range = 3
+	return item
+
+
+func _create_ether() -> ItemData:
+	var item := ItemData.new()
+	item.id = "ether"
+	item.name = "에테르"
+	item.description = "MP를 30 회복한다."
+	item.type = ItemData.ItemType.CONSUMABLE
+	item.price_buy = 100
+	item.price_sell = 50
+	item.target_type = ItemData.ItemTargetType.ALLY
+	item.use_range = 3
+	return item
+
+
+func _create_antidote() -> ItemData:
+	var item := ItemData.new()
+	item.id = "antidote"
+	item.name = "해독제"
+	item.description = "독 상태를 치료한다."
+	item.type = ItemData.ItemType.CONSUMABLE
+	item.price_buy = 100
+	item.price_sell = 50
+	item.target_type = ItemData.ItemTargetType.ALLY
+	item.use_range = 3
+	return item
+
+
+func _create_fire_bomb() -> ItemData:
+	var item := ItemData.new()
+	item.id = "fire_bomb"
+	item.name = "화염탄"
+	item.description = "적에게 불속성 데미지를 입힌다."
+	item.type = ItemData.ItemType.CONSUMABLE
+	item.price_buy = 80
+	item.price_sell = 40
+	item.target_type = ItemData.ItemTargetType.ENEMY
+	item.use_range = 4
+	return item
+
+
+func _create_smoke_ball() -> ItemData:
+	var item := ItemData.new()
+	item.id = "smoke_ball"
+	item.name = "연막탄"
+	item.description = "전투에서 도망칠 확률을 높인다."
+	item.type = ItemData.ItemType.CONSUMABLE
+	item.price_buy = 60
+	item.price_sell = 30
+	item.target_type = ItemData.ItemTargetType.SELF
+	item.use_range = 0
+	return item

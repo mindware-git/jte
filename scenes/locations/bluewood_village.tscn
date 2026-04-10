@@ -2,7 +2,9 @@
 
 [ext_resource type="TileSet" uid="uid://brh3yq3ty0set" path="res://asset/tileset/grass_tileset.tres" id="1_kct05"]
 [ext_resource type="PackedScene" uid="uid://pvnmssu2aymg" path="res://scenes/entities/actor.tscn" id="2_26una"]
+[ext_resource type="TileSet" uid="uid://6lvuua0cw2gk" path="res://asset/tileset/prop_tileset.tres" id="2_w8i26"]
 [ext_resource type="PackedScene" uid="uid://j1c7o4lq8k1g" path="res://scenes/entities/gate.tscn" id="3_ur26d"]
+[ext_resource type="PackedScene" uid="uid://dxny3w10ne2as" path="res://scenes/entities/treasure.tscn" id="4_hbh7j"]
 
 [node name="BluewoodVillage" type="Node2D" unique_id=360695685]
 
@@ -23,3 +25,16 @@ target_location = "elemental_slope"
 [node name="TavernGate" parent="Gate" unique_id=221088295 instance=ExtResource("3_ur26d")]
 position = Vector2(606, 477)
 target_location = "tavern"
+
+[node name="ShopGate" parent="Gate" unique_id=1916266023 instance=ExtResource("3_ur26d")]
+position = Vector2(400, 600)
+target_location = "bluewood_shop"
+
+[node name="Treasure" type="Node2D" parent="." unique_id=953099278]
+
+[node name="Treasure1" parent="Treasure" unique_id=859756573 instance=ExtResource("4_hbh7j")]
+position = Vector2(200, 300)
+
+[node name="PropLayer" type="TileMapLayer" parent="." unique_id=1160037627]
+tile_map_data = PackedByteArray("AAABAAEAAQANAAsAAAABAAIAAQANAAwAAAACAAEAAQAOAAsAAAACAAIAAQAOAAwAAAADAAMAAQANAAsAAAADAAQAAQANAAwAAAAEAAMAAQAOAAsAAAAEAAQAAQAOAAwAAAAFAAUAAQANAAsAAAAFAAYAAQANAAwAAAAGAAUAAQAOAAsAAAAGAAYAAQAOAAwAAAAHAAcAAQANAAsAAAAHAAgAAQANAAwAAAAIAAcAAQAOAAsAAAAIAAgAAQAOAAwAAAAJAAkAAQANAAsAAAAJAAoAAQANAAwAAAAKAAkAAQAOAAsAAAAKAAoAAQAOAAwAAAALAAsAAQANAAsAAAALAAwAAQANAAwAAAAMAAsAAQAOAAsAAAAMAAwAAQAOAAwAAAA=")
+tile_set = ExtResource("2_w8i26")

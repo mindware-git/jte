@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://dxny3w10ne2as"]
+
+[ext_resource type="SpriteFrames" uid="uid://bcvek8quqvyc6" path="res://asset/sprite/treasure_sprite_frames.tres" id="1_wiib2"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_rqq00"]
+size = Vector2(64, 64)
+
+[node name="Treasure" type="StaticBody2D" unique_id=859756573]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=785605273]
+shape = SubResource("RectangleShape2D_rqq00")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1005491599]
+sprite_frames = ExtResource("1_wiib2")

@@ -27,6 +27,12 @@ enum State {
 	IN_BATTLE  ## 전투 중
 }
 
+## 이동 상태 (세부)
+enum MoveState {
+	IDLE,           ## 정지
+	MOVING_TO_GRID  ## GRID 간 이동 중
+}
+
 ## 방향
 enum Direction {
 	DOWN,   ## 아래 (0)
@@ -49,9 +55,18 @@ signal died(actor: Actor)
 # Constants
 # ═══════════════════════════════════════════════════════════════════════════════
 
-const TILE_SIZE := 16          ## 타일 크기 (픽셀)
-const MOVE_SPEED := 100.0      ## 이동 속도 (픽셀/초)
-const SPRITE_SIZE := Vector2i(64, 128)  ## 스프라이트 크기
+## 기본 이동 속도 (픽셀/초)
+const BASE_MOVE_SPEED := 100.0
+
+## 스프라이트 크기
+const SPRITE_SIZE := Vector2i(64, 128)
+
+## 이동 속도 (Role별로 다름)
+var _move_speed: float = BASE_MOVE_SPEED
+
+## 그리드 크기 (GameManager에서 가져옴)
+var GRID_SIZE: int:
+	get: return GameManager.GRID_SIZE
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Data
@@ -84,6 +99,15 @@ var _is_moving: bool = false
 
 ## 목표 월드 위치
 var _target_position: Vector2 = Vector2.ZERO
+
+## 이동 경로 (GRID 목록)
+var _path: Array[Vector2i] = []
+
+## 현재 waypoint 인덱스
+var _current_waypoint: int = 0
+
+## 최종 목적지
+var _final_target: Vector2i = Vector2i(0, 0)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Components
@@ -154,18 +178,8 @@ var is_dead: bool:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _ready() -> void:
-	_setup_collision_shape()
 	_setup_click_area()
 	_setup_name_label()
-
-
-func _setup_collision_shape() -> void:
-	var collision := get_node_or_null("CollisionShape2D") as CollisionShape2D
-	if collision:
-		var shape := RectangleShape2D.new()
-		shape.size = Vector2(64, 64)
-		collision.shape = shape
-
 
 func _physics_process(delta: float) -> void:
 	if _is_moving:
@@ -181,13 +195,19 @@ func init(data: CharacterData, role: Role = Role.PLAYER) -> void:
 	_data = data
 	_role = role
 	
+	# Role별 이동 속도 설정
+	match _role:
+		Role.PLAYER:
+			_move_speed = BASE_MOVE_SPEED * 5.0  # 5배 빠름
+		Role.NPC, Role.ENEMY:
+			_move_speed = BASE_MOVE_SPEED
+	
 	# 플레이어일 때만 카메라 추가
 	if _role == Role.PLAYER:
 		var camera := Camera2D.new()
 		camera.enabled = true
 		add_child(camera)
-	
-	_setup_sprite()
+
 	_update_name_label()
 	_update_animation()
 
@@ -199,37 +219,13 @@ func init_battle(battle_unit: BattleData.Unit) -> void:
 	_setup_battle_ui()
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Setup Methods
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func _setup_sprite() -> void:
-	var animated_sprite := get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
-	if not animated_sprite:
-		return
-	
-	# SpriteFrames 로드
-	if _data and _data.id != "":
-		var frames_path := "res://asset/sprite/characters/%s.tres" % _data.id
-		if ResourceLoader.exists(frames_path):
-			animated_sprite.sprite_frames = load(frames_path)
-		else:
-			# 기본 프레임 로드
-			var default_path := "res://asset/sprite/sprite_frames.tres"
-			if ResourceLoader.exists(default_path):
-				animated_sprite.sprite_frames = load(default_path)
-	
-	@warning_ignore("integer_division")
-	animated_sprite.offset = Vector2(0, -SPRITE_SIZE.y / 2)
-
-
 func _setup_click_area() -> void:
 	_click_area = Area2D.new()
 	@warning_ignore("integer_division")
-	_click_area.position = Vector2(0, -TILE_SIZE / 2)
+	_click_area.position = Vector2(0, -GRID_SIZE / 2)
 	
 	var shape := RectangleShape2D.new()
-	shape.size = Vector2(TILE_SIZE, TILE_SIZE)
+	shape.size = Vector2(GRID_SIZE, GRID_SIZE)
 	
 	var collision := CollisionShape2D.new()
 	collision.shape = shape
@@ -304,7 +300,7 @@ func set_tile(tile: Vector2i) -> void:
 	_is_moving = false
 
 
-## 타일 좌표로 이동
+## 타일 좌표로 이동 (한 칸만)
 func move_to_tile(tile: Vector2i) -> void:
 	if _is_moving:
 		return
@@ -319,28 +315,115 @@ func move_to_tile(tile: Vector2i) -> void:
 	_update_animation()
 
 
-## 이동 처리
-func _process_movement(delta: float) -> void:
-	position = position.move_toward(_target_position, MOVE_SPEED * delta)
+## 목표 GRID로 경로 이동 (Player, NPC, MOB 공용)
+## force: true면 이동 중에도 경로 변경 (Player용)
+func move_to_target(target_grid: Vector2i, force: bool = false) -> void:
+	# 이동 중이면 force일 때만 경로 변경
+	if _is_moving and not force:
+		return
 	
-	if position.distance_to(_target_position) < 1.0:
-		position = _target_position
-		_current_tile = _target_tile
-		_is_moving = false
-		_state = State.IDLE
-		_update_animation()
-		movement_finished.emit()
+	if _state == State.TALKING or _state == State.IN_BATTLE:
+		return
+	
+	# 같은 위치면 무시
+	if _current_tile == target_grid:
+		return
+	
+	# 기존 경로 취소
+	_path.clear()
+	_current_waypoint = 0
+	
+	# 경로 계산
+	_path = _calculate_path(_current_tile, target_grid)
+	_final_target = target_grid
+	
+	if _path.is_empty():
+		return
+	
+	print("경로 이동 시작: ", _current_tile, " → ", target_grid, " 경로: ", _path)
+	_start_next_leg()
 
 
-## 타일 좌표 → 월드 좌표
+## 경로 계산 (X축 우선, 직선)
+func _calculate_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	var path: Array[Vector2i] = []
+	var current := from
+	
+	# X축 먼저 이동
+	while current.x != to.x:
+		current.x += sign(to.x - current.x)
+		path.append(current)
+	
+	# 그 다음 Y축 이동
+	while current.y != to.y:
+		current.y += sign(to.y - current.y)
+		path.append(current)
+	
+	return path
+
+
+## 다음 GRID로 이동 시작
+func _start_next_leg() -> void:
+	if _current_waypoint >= _path.size():
+		return
+	
+	var next_grid := _path[_current_waypoint]
+	_target_tile = next_grid
+	_target_position = _tile_to_world(next_grid)
+	_is_moving = true
+	_state = State.MOVING
+	
+	# 이동 방향 설정
+	var move_vec := Vector2(next_grid.x - _current_tile.x, next_grid.y - _current_tile.y)
+	set_direction_from_vector(move_vec)
+	
+	_update_animation()
+
+
+## 이동 처리 (move_and_slide 방식)
+func _process_movement(_delta: float) -> void:
+	# 목표 위치로 이동 방향 계산
+	var direction := (_target_position - position).normalized()
+	
+	# velocity 설정 후 이동
+	velocity = direction * _move_speed
+	move_and_slide()
+	
+	# 현재 위치가 어느 GRID에 있는지 확인
+	var actual_grid := _world_to_tile(position)
+	
+	# 디버그 print
+	# print("[", display_name, "] pos: ", position, " actual_grid: ", actual_grid, " target: ", _target_tile, " waypoint: ", _current_waypoint)
+	
+	# 목표 GRID에 도착했는지 확인
+	if actual_grid == _target_tile:
+		_current_tile = actual_grid
+		_current_waypoint += 1
+		
+		if _current_waypoint < _path.size():
+			# 다음 GRID로
+			print("GRID 도착: ", _current_tile, " → 다음: ", _path[_current_waypoint])
+			_start_next_leg()
+		else:
+			# 최종 도착
+			_is_moving = false
+			_state = State.IDLE
+			_path.clear()
+			_current_waypoint = 0
+			_update_animation()
+			print("이동 완료: ", _current_tile)
+			movement_finished.emit()
+
+
+## 타일 좌표 → 월드 좌표 (그리드 기반)
 func _tile_to_world(tile: Vector2i) -> Vector2:
 	@warning_ignore("integer_division")
-	return Vector2(tile.x * TILE_SIZE + TILE_SIZE / 2, tile.y * TILE_SIZE + TILE_SIZE / 2)
+	return Vector2(tile.x * GRID_SIZE + GRID_SIZE / 2, tile.y * GRID_SIZE + GRID_SIZE / 2)
 
 
-## 월드 좌표 → 타일 좌표
+## 월드 좌표 → 타일 좌표 (그리드 기반)
 func _world_to_tile(world_pos: Vector2) -> Vector2i:
-	return Vector2i(int(world_pos.x / TILE_SIZE), int(world_pos.y / TILE_SIZE))
+	return Vector2i(int(world_pos.x / GRID_SIZE), int(world_pos.y / GRID_SIZE))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

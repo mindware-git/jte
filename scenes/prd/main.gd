@@ -24,8 +24,8 @@ func _create_screen() -> void:
 	var screen: Node2D
 	
 	match GameManager.current_screen:
-		# "title":
-		#	screen = TitleScreen.new()
+		"title":
+			screen = TitleScreen.new()
 		"explore":
 			screen = ExploreScreen.new()
 		"battle":

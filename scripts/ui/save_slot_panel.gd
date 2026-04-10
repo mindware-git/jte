@@ -1,9 +1,9 @@
-class_name SaveSlotScreen
+class_name SaveSlotPanel
 extends Control
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SaveSlotScreen
-# 저장/로드 슬롯 선택 화면
+# SaveSlotPanel
+# 저장/로드 슬롯 선택 패널 (오버레이)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 signal closed()

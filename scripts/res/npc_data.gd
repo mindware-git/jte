@@ -21,6 +21,12 @@ var default_dialogue_id: String = ""
 ## 위치 ID (어느 위치에 있는지)
 var location_id: String = ""
 
+## NPC 타입 ("shop", "dialogue", "quest" 등)
+var npc_type: String = "dialogue"
+
+## 상점 ID (상점 NPC인 경우)
+var shop_id: String = ""
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Factory

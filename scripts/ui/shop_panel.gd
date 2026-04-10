@@ -1,5 +1,5 @@
 class_name ShopPanel
-extends Control
+extends CanvasLayer
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ShopPanel
@@ -24,6 +24,7 @@ var _is_buy_tab: bool = true
 var _result: Dictionary = {}
 
 ## UI 컴포넌트
+var _container: Control
 var _overlay: ColorRect
 var _panel: PanelContainer
 var _title_label: Label
@@ -44,10 +45,13 @@ var _message_confirm_btn: Button
 
 func _init(p_shop_id: String = "general_store") -> void:
 	_shop_id = p_shop_id
+	layer = 10  # 최상위 레이어
 
 
 func _ready() -> void:
-	anchors_preset = Control.PRESET_FULL_RECT
+	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	get_tree().paused = true
+	
 	_result = {}
 	_shop_registry = ShopRegistry.new()
 	_item_registry = ItemRegistry.new()
@@ -71,19 +75,24 @@ func _load_shop() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _create_ui() -> void:
+	# 최상위 컨테이너 (CanvasLayer 안에 Control 필요)
+	_container = Control.new()
+	_container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_container.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_container)
+	
 	# 반투명 오버레이 (전체 화면)
 	_overlay = ColorRect.new()
 	_overlay.color = Color(0, 0, 0, 0.6)
 	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(_overlay)
+	_container.add_child(_overlay)
 	
 	# 상점 패널 (중앙)
 	_panel = PanelContainer.new()
 	_panel.set_anchors_preset(Control.PRESET_CENTER)
 	_panel.custom_minimum_size = Vector2(900, 550)
-	_panel.position = Vector2(-450, -275)
-	add_child(_panel)
+	_container.add_child(_panel)
 	
 	var main_vbox := VBoxContainer.new()
 	_panel.add_child(main_vbox)
@@ -170,9 +179,8 @@ func _create_message_panel() -> void:
 	_message_panel = PanelContainer.new()
 	_message_panel.set_anchors_preset(Control.PRESET_CENTER)
 	_message_panel.custom_minimum_size = Vector2(400, 100)
-	_message_panel.position = Vector2(-200, -200)
 	_message_panel.visible = false
-	add_child(_message_panel)
+	_container.add_child(_message_panel)
 	
 	var content := VBoxContainer.new()
 	_message_panel.add_child(content)
@@ -439,5 +447,6 @@ func _remove_item_from_inventory(item_id: String) -> bool:
 
 
 func _on_close_pressed() -> void:
+	get_tree().paused = false
 	closed.emit(_result)
 	queue_free()

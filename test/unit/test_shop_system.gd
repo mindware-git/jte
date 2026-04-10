@@ -103,24 +103,22 @@ func test_shop_calculate_sell_price_with_discount() -> void:
 
 func test_shop_calculate_buy_price() -> void:
 	_shop_data = ShopData.create("test_shop", "SHOP_TEST")
-	_shop_data.buy_price_rate = 0.5  # 50% 가격에 구매
-	_shop_data.add_item("potion")  # 기본 가격 50
+	_shop_data.add_item("potion")  # price_sell = 25
 	
 	var price = _shop_data.get_buy_price("potion")
-	assert_eq(price, 25, "Buy price should be 25 at 50% rate (50 * 0.5)")
+	assert_eq(price, 25, "Buy price should be 25 (price_sell)")
 
 
 func test_shop_price_rate_modification() -> void:
 	_shop_data = ShopData.create("test_shop", "SHOP_TEST")
 	_shop_data.sell_price_rate = 1.5  # 150% 가격
-	_shop_data.buy_price_rate = 0.3  # 30% 가격에 구매
-	_shop_data.add_item("ether")  # 기본 가격 100
+	_shop_data.add_item("ether")  # price_buy = 100, price_sell = 50
 	
 	var sell_price = _shop_data.get_sell_price("ether")
 	var buy_price = _shop_data.get_buy_price("ether")
 	
 	assert_eq(sell_price, 150, "Sell price should be 150 at 150% rate")
-	assert_eq(buy_price, 30, "Buy price should be 30 at 30% rate")
+	assert_eq(buy_price, 50, "Buy price should be 50 (price_sell)")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -248,7 +246,7 @@ func test_item_registry_items_exist() -> void:
 
 func test_item_registry_prices() -> void:
 	var potion = _item_registry.get_item("potion")
-	assert_eq(potion.price_coin, 50, "Potion price should be 50")
+	assert_eq(potion.price_buy, 50, "Potion price should be 50")
 	
 	var ether = _item_registry.get_item("ether")
-	assert_eq(ether.price_coin, 100, "Ether price should be 100")
+	assert_eq(ether.price_buy, 100, "Ether price should be 100")

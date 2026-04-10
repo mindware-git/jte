@@ -80,12 +80,7 @@ func _load_location_scene() -> void:
 
 func _spawn_player() -> void:
 	_player = ACTOR_SCENE.instantiate()
-	
-	# add_child 전에 스프라이트 프레임 설정
-	var animated_sprite := _player.get_node("AnimatedSprite2D") as AnimatedSprite2D
-	if animated_sprite:
-		animated_sprite.sprite_frames = load("res://asset/sprite/sprite_frames.tres")
-	
+
 	# 파티 리더의 CharacterData 가져오기
 	var leader_id: String = GameManager.party_leader
 	var player_data: CharacterData = null
@@ -176,7 +171,7 @@ func _on_interactable_interacted(interactable: Interactable) -> void:
 	print("Interactable 상호작용: ", interactable.name)
 	
 	match interactable.interact_type:
-		"chest", "investigate":
+		"treasure", "investigate":
 			# 아이템 획득
 			var item_id: String = interactable.interact_data.get("item_id", "")
 			if item_id != "":
@@ -237,13 +232,44 @@ func _initialize_npc(npc: Actor) -> void:
 	# NPC 초기화
 	npc.init(npc_data, Actor.Role.NPC)
 	
+	# 현재 위치를 GRID로 설정 (중요!)
+	var npc_grid := _world_to_tile(npc.position)
+	npc.set_tile(npc_grid)
+	
 	# 클릭 시그널 연결
 	npc.clicked.connect(_on_npc_clicked)
 	
 	# NPC 주변에 Interactable 생성 (대화 범위)
 	_create_npc_interactable(npc)
 	
+	# 랜덤 배회 타이머 추가
+	var wander_timer := Timer.new()
+	wander_timer.wait_time = randf_range(2.0, 5.0)  # 2~5초 랜덤
+	wander_timer.autostart = true
+	wander_timer.one_shot = false  # 반복
+	wander_timer.timeout.connect(_on_npc_wander_timer.bind(npc))
+	npc.add_child(wander_timer)
+	
 	print("NPC 초기화: ", npc.name)
+
+
+func _on_npc_wander_timer(npc: Actor) -> void:
+	if npc.is_moving:
+		return
+	
+	# 현재 위치 기준 랜덤 이동 (±3 GRID)
+	var random_offset := Vector2i(
+		randi_range(-3, 3),
+		randi_range(-3, 3)
+	)
+	var target := npc.current_tile + random_offset
+	
+	# 음수 좌표 방지
+	if target.x < 0 or target.y < 0:
+		return
+	
+	print("NPC 랜덤 이동: ", npc.display_name, " → ", target)
+	npc.move_to_target(target)
 
 
 func _create_npc_interactable(npc: Actor) -> void:
@@ -338,22 +364,25 @@ func _create_ui() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _player == null or _player.is_moving:
+	if _player == null:
 		return
 	
-	# 마우스 클릭으로 순간이동
+	# 마우스 클릭으로 경로 이동
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var click_pos := get_global_mouse_position()
-		var target_tile := _world_to_tile(click_pos)
-		_player.set_tile(target_tile)  # 순간이동
-		_save_player_position(target_tile)
+		var target_grid := _world_to_tile(click_pos)
+		
+		# 클릭 위치와 GRID 매핑 print
+		print("클릭 위치: ", click_pos, " → GRID: ", target_grid)
+		
+		# 경로 이동 시작 (이동 중에도 경로 변경 가능)
+		_player.move_to_target(target_grid, true)
 		return
 
 
-## 월드 좌표 → 타일 좌표
+## 월드 좌표 → 타일 좌표 (그리드 기반)
 func _world_to_tile(world_pos: Vector2) -> Vector2i:
-	const TILE_SIZE := 16
-	return Vector2i(int(world_pos.x / TILE_SIZE), int(world_pos.y / TILE_SIZE))
+	return Vector2i(int(world_pos.x / GameManager.GRID_SIZE), int(world_pos.y / GameManager.GRID_SIZE))
 
 
 func _save_player_position(tile: Vector2i) -> void:
@@ -369,8 +398,35 @@ func _on_player_clicked(actor: Actor) -> void:
 
 
 func _on_npc_clicked(npc: Actor) -> void:
-	print("NPC 클릭: ", npc.display_name)
-	# TODO: 대화 시스템 연동
+	print("NPC 클릭: ", npc.name, " 위치: ", _location_id)
+	
+	# NPC ID로 NPCData 조회
+	var npc_id: String = npc.name.to_snake_case()
+	var npc_registry := NPCRegistry.new()
+	var npc_data: NPCData = npc_registry.get_npc(npc_id)
+	
+	if npc_data == null:
+		print("  → NPC 데이터 없음: ", npc_id)
+		return
+	
+	# NPC 타입별 처리
+	match npc_data.npc_type:
+		"shop":
+			print("  → 상점 열기: ", npc_data.shop_id)
+			_open_shop(npc_data.shop_id)
+		_:
+			print("  → 대화: ", npc_id)
+			_open_dialogue(npc_id)
+
+
+func _open_shop(shop_id: String) -> void:
+	var shop_panel := ShopPanel.new(shop_id)
+	add_child(shop_panel)
+
+
+func _open_dialogue(npc_id: String) -> void:
+	var dialogue_panel := DialoguePanel.new(npc_id)
+	add_child(dialogue_panel)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
