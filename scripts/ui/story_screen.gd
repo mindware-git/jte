@@ -1,187 +1,448 @@
 class_name StoryScreen
-extends Control
+extends Node2D
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # StoryScreen
-# 스토리 화면 (타이핑 효과 + 자동 진행 + 터치 가속)
+# 컷신 자동 진행 화면 (명령 시퀀스 기반)
+# 맵 로드, Actor 관리, 대화/카메라 연출, 터치 가속
 # ═══════════════════════════════════════════════════════════════════════════════
 
-signal transition_requested(next_screen: Node)
+signal finished()
 
-## 표시할 챕터 ID
-@export var chapter_id: String = "act1_prologue"
+# ═══════════════════════════════════════════════════════════════════════════════
+# Constants
+# ═══════════════════════════════════════════════════════════════════════════════
 
-## 타이핑 속도 (초당 글자 수)
-@export var typing_speed: float = 30.0
+const ACTOR_SCENE := preload("res://scenes/entities/actor.tscn")
 
-## 터치 중 가속 배율
-@export var touch_speed_multiplier: float = 4.0
+## 터치 가속 배율
+const TOUCH_SPEED_MULTIPLIER := 4.0
 
-## 자동 진행 대기 시간 (초)
-@export var auto_advance_delay: float = 1.5
+# ═══════════════════════════════════════════════════════════════════════════════
+# Variables
+# ═══════════════════════════════════════════════════════════════════════════════
 
-# 스토리 데이터
-var _registry: StoryRegistry
-var _sequences: Array[StorySequenceData] = []
-var _current_index: int = 0
+## RNA 데이터
+var _rna: Dictionary = {}
 
-# 타이핑 상태
-var _full_text: String = ""
-var _displayed_text: String = ""
-var _char_index: int = 0
-var _typing_timer: float = 0.0
-var _is_typing: bool = false
+## 컷신 데이터
+var _cutscene: CutsceneData = null
 
-# 자동 진행
-var _auto_advance_timer: float = 0.0
-var _waiting_for_auto_advance: bool = false
+## 레지스트리
+var _registry: CutsceneRegistry = null
 
-# 터치 상태
+## 현재 명령 인덱스
+var _command_index: int = 0
+
+## 스폰된 Actor 맵 (actor_id → Actor)
+var _actors: Dictionary = {}
+
+## 맵 노드
+var _map_node: Node2D = null
+
+## 카메라
+var _camera: Camera2D = null
+
+## 페이드 오버레이
+var _fade_overlay: CanvasLayer = null
+var _fade_rect: ColorRect = null
+
+## 터치 상태
 var _is_touching: bool = false
 
-# UI 컴포넌트
-var _text_label: Label
-var _speaker_label: Label
-var _progress_label: Label
-var _touch_hint_label: Label
+## 속도 배율 (터치 시 가속)
+var _speed_multiplier: float = 1.0
+
+## 실행 중 여부
+var _is_running: bool = false
+
+## 대사 관련
+var _dialogue_container: CanvasLayer = null
+var _dialogue_panel_bg: PanelContainer = null
+var _dialogue_speaker_label: Label = null
+var _dialogue_text_label: Label = null
+var _dialogue_waiting: bool = false
+
+## 타이핑 상태
+var _typing_full_text: String = ""
+var _typing_displayed: String = ""
+var _typing_char_index: int = 0
+var _typing_timer: float = 0.0
+var _is_typing: bool = false
+var _typing_speed: float = 30.0
+
+## 자동 진행 대기
+var _auto_advance_timer: float = 0.0
+var _auto_advance_delay: float = 1.5
+var _waiting_for_advance: bool = false
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Lifecycle
+# Setup
 # ═══════════════════════════════════════════════════════════════════════════════
 
-func _ready() -> void:
-	anchors_preset = Control.PRESET_FULL_RECT
-	_registry = StoryRegistry.new()
-	_load_chapter()
-	_create_ui()
-	_start_sequence()
+func setup(rna: Dictionary) -> void:
+	_rna = rna
 
+	var cutscene_id: String = rna.get("cutscene_id", "part1_opening")
+	_registry = CutsceneRegistry.new()
+	_cutscene = _registry.get_cutscene(cutscene_id)
+
+	if _cutscene == null:
+		push_error("StoryScreen: 컷신을 찾을 수 없음: " + cutscene_id)
+		_complete_cutscene()
+		return
+
+	# 맵 배경 로드
+	_load_location()
+
+	# 카메라 설정
+	_setup_camera()
+
+	# 페이드 오버레이 설정
+	_setup_fade_overlay()
+
+	# 대사 UI 설정
+	_setup_dialogue_ui()
+
+	# 명령 실행 시작
+	_command_index = 0
+	_is_running = true
+	_execute_next_command()
+
+	print("StoryScreen 설정 완료: ", cutscene_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Location Loading (ExploreScreen 패턴 재사용)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _load_location() -> void:
+	if _cutscene.location_id == "":
+		return
+
+	var path := "res://scenes/locations/%s.tscn" % _cutscene.location_id
+
+	if not ResourceLoader.exists(path):
+		push_error("맵 씬을 찾을 수 없음: " + path)
+		return
+
+	var scene := load(path).instantiate() as Node2D
+	add_child(scene)
+	_map_node = scene
+
+	print("맵 로드 완료: ", _cutscene.location_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Camera Setup
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _setup_camera() -> void:
+	_camera = Camera2D.new()
+	_camera.enabled = true
+	add_child(_camera)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Fade Overlay
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _setup_fade_overlay() -> void:
+	_fade_overlay = CanvasLayer.new()
+	_fade_overlay.layer = 20
+	add_child(_fade_overlay)
+
+	_fade_rect = ColorRect.new()
+	_fade_rect.color = Color(0, 0, 0, 1)  # 시작할 때 검은 화면
+	_fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fade_overlay.add_child(_fade_rect)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Dialogue UI (컷신 전용 하단 대사창)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _setup_dialogue_ui() -> void:
+	_dialogue_container = CanvasLayer.new()
+	_dialogue_container.layer = 15
+	add_child(_dialogue_container)
+
+	# 루트 컨트롤
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_dialogue_container.add_child(root)
+
+	# 하단 대사창 패널
+	_dialogue_panel_bg = PanelContainer.new()
+	_dialogue_panel_bg.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_dialogue_panel_bg.offset_top = -200
+	_dialogue_panel_bg.offset_left = 50
+	_dialogue_panel_bg.offset_right = -50
+	_dialogue_panel_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_dialogue_panel_bg.visible = false
+	root.add_child(_dialogue_panel_bg)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
+	_dialogue_panel_bg.add_child(vbox)
+
+	# 화자 이름
+	_dialogue_speaker_label = Label.new()
+	_dialogue_speaker_label.add_theme_font_size_override("font_size", 22)
+	_dialogue_speaker_label.add_theme_color_override("font_color", Color(0.9, 0.7, 0.2))
+	vbox.add_child(_dialogue_speaker_label)
+
+	# 대사 텍스트
+	_dialogue_text_label = Label.new()
+	_dialogue_text_label.add_theme_font_size_override("font_size", 18)
+	_dialogue_text_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+	_dialogue_text_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_dialogue_text_label.custom_minimum_size = Vector2(0, 80)
+	vbox.add_child(_dialogue_text_label)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Input Handling
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _input(event: InputEvent) -> void:
+	# 터치 시작/종료
+	if event is InputEventScreenTouch:
+		_is_touching = event.pressed
+		_speed_multiplier = TOUCH_SPEED_MULTIPLIER if _is_touching else 1.0
+		if event.pressed:
+			_on_touch()
+
+	# 마우스 클릭도 지원 (에디터 테스트용)
+	if event is InputEventMouseButton:
+		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			_is_touching = true
+			_speed_multiplier = TOUCH_SPEED_MULTIPLIER
+			_on_touch()
+		elif not event.pressed:
+			_is_touching = false
+			_speed_multiplier = 1.0
+
+
+func _on_touch() -> void:
+	# 타이핑 중이면 즉시 완료
+	if _is_typing:
+		_typing_displayed = _typing_full_text
+		_dialogue_text_label.text = _typing_displayed
+		_typing_char_index = _typing_full_text.length()
+		_finish_typing()
+	# 자동 진행 대기 중이면 즉시 다음으로
+	elif _waiting_for_advance:
+		_waiting_for_advance = false
+		_dialogue_panel_bg.visible = false
+		_dialogue_waiting = false
+		_execute_next_command()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Process (타이핑 + 자동 진행)
+# ═══════════════════════════════════════════════════════════════════════════════
 
 func _process(delta: float) -> void:
 	if _is_typing:
 		_process_typing(delta)
-	elif _waiting_for_auto_advance:
+	elif _waiting_for_advance:
 		_process_auto_advance(delta)
 
 
-func _input(event: InputEvent) -> void:
-	# 터치 시작
-	if event is InputEventScreenTouch:
-		if event.pressed:
-			_is_touching = true
-			_on_touch_begin()
-		else:
-			_is_touching = false
-	
-	# 마우스 클릭도 지원 (에디터 테스트용)
-	if event is InputEventMouseButton:
-		if event.pressed:
-			_is_touching = true
-			_on_touch_begin()
-		else:
-			_is_touching = false
+func _process_typing(delta: float) -> void:
+	var speed := _typing_speed * _speed_multiplier
+	_typing_timer += delta
+
+	var chars_to_add := int(_typing_timer * speed)
+	if chars_to_add > 0:
+		_typing_timer = 0.0
+		for i in range(chars_to_add):
+			if _typing_char_index < _typing_full_text.length():
+				_typing_displayed += _typing_full_text[_typing_char_index]
+				_typing_char_index += 1
+			else:
+				break
+
+		_dialogue_text_label.text = _typing_displayed
+
+		if _typing_char_index >= _typing_full_text.length():
+			_finish_typing()
+
+
+func _finish_typing() -> void:
+	_is_typing = false
+	_waiting_for_advance = true
+	_auto_advance_timer = 0.0
+
+
+func _process_auto_advance(delta: float) -> void:
+	var delay := _auto_advance_delay / _speed_multiplier
+	_auto_advance_timer += delta
+
+	if _auto_advance_timer >= delay:
+		_waiting_for_advance = false
+		_dialogue_panel_bg.visible = false
+		_dialogue_waiting = false
+		_execute_next_command()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Chapter Loading
+# Command Execution
 # ═══════════════════════════════════════════════════════════════════════════════
 
-func _load_chapter() -> void:
-	if _registry.has_chapter(chapter_id):
-		_sequences = _registry.get_chapter(chapter_id)
-	else:
-		push_error("StoryScreen: 챕터를 찾을 수 없음: " + chapter_id)
-		_sequences = []
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# UI Creation
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func _create_ui() -> void:
-	# 배경
-	var bg := ColorRect.new()
-	bg.color = Color(0.02, 0.02, 0.05)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
-	
-	# 대화 박스
-	var dialogue_box := PanelContainer.new()
-	dialogue_box.position = Vector2(100, 400)
-	dialogue_box.size = Vector2(1080, 200)
-	add_child(dialogue_box)
-	
-	var content := VBoxContainer.new()
-	dialogue_box.add_child(content)
-	
-	# 화자 이름
-	_speaker_label = Label.new()
-	_speaker_label.text = "나레이션"
-	_speaker_label.add_theme_font_size_override("font_size", 18)
-	_speaker_label.add_theme_color_override("font_color", Color(0.9, 0.7, 0.2))
-	content.add_child(_speaker_label)
-	
-	# 간격
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 10)
-	content.add_child(spacer)
-	
-	# 대화 텍스트
-	_text_label = Label.new()
-	_text_label.text = ""
-	_text_label.add_theme_font_size_override("font_size", 20)
-	_text_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
-	_text_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	content.add_child(_text_label)
-	
-	# 진행 표시
-	_progress_label = Label.new()
-	_progress_label.text = "[1/1]"
-	_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_progress_label.position = Vector2(1100, 610)
-	_progress_label.add_theme_font_size_override("font_size", 14)
-	_progress_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
-	add_child(_progress_label)
-	
-	# 터치 힌트
-	_touch_hint_label = Label.new()
-	_touch_hint_label.text = "터치하여 빠르게 진행"
-	_touch_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_touch_hint_label.position = Vector2(480, 650)
-	_touch_hint_label.add_theme_font_size_override("font_size", 14)
-	_touch_hint_label.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
-	add_child(_touch_hint_label)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Sequence Management
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func _start_sequence() -> void:
-	if _current_index >= _sequences.size():
+func _execute_next_command() -> void:
+	if _cutscene == null:
 		return
-	
-	var seq: StorySequenceData = _sequences[_current_index]
-	_speaker_label.text = _get_speaker_display_name(seq.speaker_id)
-	_full_text = tr(seq.text_key)
-	_progress_label.text = "[%d/%d]" % [_current_index + 1, _sequences.size()]
-	
-	# 타이핑 시작
-	_char_index = 0
-	_displayed_text = ""
-	_text_label.text = ""
-	_is_typing = true
-	_waiting_for_auto_advance = false
-	
-	# 마지막 시퀀스면 힌트 변경
-	if _current_index == _sequences.size() - 1:
-		_touch_hint_label.text = tr("UI_TOUCH_START")
+
+	if _command_index >= _cutscene.commands.size():
+		_complete_cutscene()
+		return
+
+	var cmd: CutsceneCommand = _cutscene.commands[_command_index]
+	_command_index += 1
+
+	print("컷신 명령 [%d/%d]: %s" % [_command_index, _cutscene.commands.size(), CutsceneCommand.CommandType.keys()[cmd.type]])
+
+	match cmd.type:
+		CutsceneCommand.CommandType.SPAWN:
+			_cmd_spawn(cmd)
+		CutsceneCommand.CommandType.MOVE:
+			_cmd_move(cmd)
+		CutsceneCommand.CommandType.DIALOGUE:
+			_cmd_dialogue(cmd)
+		CutsceneCommand.CommandType.WAIT:
+			_cmd_wait(cmd)
+		CutsceneCommand.CommandType.ANIMATE:
+			_cmd_animate(cmd)
+		CutsceneCommand.CommandType.CAMERA:
+			_cmd_camera(cmd)
+		CutsceneCommand.CommandType.DESPAWN:
+			_cmd_despawn(cmd)
+		CutsceneCommand.CommandType.SET_FLAG:
+			_cmd_set_flag(cmd)
+		CutsceneCommand.CommandType.FADE:
+			_cmd_fade(cmd)
+		CutsceneCommand.CommandType.SE:
+			_cmd_se(cmd)
+		_:
+			push_error("알 수 없는 컷신 명령: " + str(cmd.type))
+			_execute_next_command()
+
+
+# ── SPAWN ────────────────────────────────────────────────────────────────────
+
+func _cmd_spawn(cmd: CutsceneCommand) -> void:
+	var actor_id: String = cmd.params.get("actor_id", "")
+	var character_id: String = cmd.params.get("character_id", "")
+	var tile: Vector2i = cmd.params.get("tile", Vector2i.ZERO)
+	var direction_str: String = cmd.params.get("direction", "down")
+
+	# Actor 인스턴스 생성
+	var actor: Actor = ACTOR_SCENE.instantiate()
+
+	# CharacterData 조회
+	var registry := CharacterRegistry.new()
+	var char_data: CharacterData = registry.get_character(character_id)
+	if char_data == null:
+		char_data = CharacterData.new()
+		char_data.id = character_id
+		char_data.display_name = character_id.capitalize()
+
+	actor.init(char_data, Actor.Role.NPC)
+	actor.set_tile(tile)
+
+	# 방향 설정
+	var dir: Actor.Direction = Actor.Direction.DOWN
+	match direction_str:
+		"up": dir = Actor.Direction.UP
+		"left": dir = Actor.Direction.LEFT
+		"right": dir = Actor.Direction.RIGHT
+	actor.set_direction(dir)
+
+	add_child(actor)
+	_actors[actor_id] = actor
+
+	print("  → SPAWN: ", actor_id, " at ", tile)
+
+	# 즉시 다음 명령
+	_execute_next_command()
+
+
+# ── MOVE ─────────────────────────────────────────────────────────────────────
+
+func _cmd_move(cmd: CutsceneCommand) -> void:
+	var actor_id: String = cmd.params.get("actor_id", "")
+	var target_tile: Vector2i = cmd.params.get("target_tile", Vector2i.ZERO)
+
+	var actor: Actor = _actors.get(actor_id)
+	if actor == null:
+		push_error("MOVE: 존재하지 않는 Actor: " + actor_id)
+		_execute_next_command()
+		return
+
+	# 이동 완료 시그널 대기
+	actor.movement_finished.connect(_on_move_finished, CONNECT_ONE_SHOT)
+	actor.move_to_target(target_tile, true)
+
+	print("  → MOVE: ", actor_id, " → ", target_tile)
+
+
+func _on_move_finished() -> void:
+	_execute_next_command()
+
+
+# ── DIALOGUE ─────────────────────────────────────────────────────────────────
+
+func _cmd_dialogue(cmd: CutsceneCommand) -> void:
+	var is_simple: bool = cmd.params.get("simple", false)
+
+	if is_simple:
+		# 단순 대사 (하단 대사창)
+		var speaker_id: String = cmd.params.get("speaker_id", "narration")
+		var text_key: String = cmd.params.get("text_key", "")
+
+		_show_say(speaker_id, text_key)
 	else:
-		_touch_hint_label.text = tr("UI_TOUCH_HINT")
+		# NPC 대화 (DialoguePanel 오버레이)
+		var npc_id: String = cmd.params.get("npc_id", "")
+		_show_dialogue_panel(npc_id)
+
+
+func _show_say(speaker_id: String, text_key: String) -> void:
+	# 화자 이름 설정
+	_dialogue_speaker_label.text = _get_speaker_display_name(speaker_id)
+
+	# 타이핑 시작
+	_typing_full_text = tr(text_key)
+	_typing_displayed = ""
+	_typing_char_index = 0
+	_typing_timer = 0.0
+	_is_typing = true
+	_dialogue_waiting = true
+
+	_dialogue_text_label.text = ""
+	_dialogue_panel_bg.visible = true
+
+	print("  → SAY: [%s] %s" % [speaker_id, text_key])
+
+
+func _show_dialogue_panel(npc_id: String) -> void:
+	var dialogue_panel := DialoguePanel.new(npc_id)
+	dialogue_panel.dialogue_finished.connect(_on_dialogue_panel_finished, CONNECT_ONE_SHOT)
+	add_child(dialogue_panel)
+
+	print("  → DIALOGUE: ", npc_id)
+
+
+func _on_dialogue_panel_finished(_result: Dictionary) -> void:
+	_execute_next_command()
 
 
 func _get_speaker_display_name(speaker_id: String) -> String:
-	# 화자 이름도 번역 키 사용
 	match speaker_id:
 		"narration":
 			return tr("SPEAKER_NARRATION")
@@ -197,119 +458,151 @@ func _get_speaker_display_name(speaker_id: String) -> String:
 			return speaker_id
 
 
-func _process_typing(delta: float) -> void:
-	# 타이핑 속도 계산 (터치 중이면 가속)
-	var speed := typing_speed
-	if _is_touching:
-		speed *= touch_speed_multiplier
-	
-	# 타이핑 타이머 업데이트
-	_typing_timer += delta
-	var chars_to_add := int(_typing_timer * speed)
-	
-	if chars_to_add > 0:
-		_typing_timer = 0.0
-		
-		for i in range(chars_to_add):
-			if _char_index < _full_text.length():
-				_displayed_text += _full_text[_char_index]
-				_char_index += 1
-			else:
-				break
-		
-		_text_label.text = _displayed_text
-		
-		# 타이핑 완료 체크
-		if _char_index >= _full_text.length():
-			_on_typing_complete()
+# ── WAIT ─────────────────────────────────────────────────────────────────────
+
+func _cmd_wait(cmd: CutsceneCommand) -> void:
+	var duration: float = cmd.params.get("duration", 1.0)
+	var actual_duration := duration / _speed_multiplier
+
+	print("  → WAIT: ", duration, "s")
+
+	await get_tree().create_timer(actual_duration).timeout
+	_execute_next_command()
 
 
-func _on_typing_complete() -> void:
-	_is_typing = false
-	
-	# 이벤트 트리거 처리
-	if _current_index < _sequences.size():
-		var seq: StorySequenceData = _sequences[_current_index]
-		if seq.trigger_event != "":
-			_handle_event(seq.trigger_event)
-	
-	# 마지막 시퀀스가 아니면 자동 진행 대기
-	if _current_index < _sequences.size() - 1:
-		_waiting_for_auto_advance = true
-		_auto_advance_timer = 0.0
+# ── ANIMATE ──────────────────────────────────────────────────────────────────
+
+func _cmd_animate(cmd: CutsceneCommand) -> void:
+	var actor_id: String = cmd.params.get("actor_id", "")
+	var animation_name: String = cmd.params.get("animation_name", "")
+
+	var actor: Actor = _actors.get(actor_id)
+	if actor:
+		actor.play_animation(animation_name)
+		print("  → ANIMATE: ", actor_id, " → ", animation_name)
+
+	# 즉시 다음 명령
+	_execute_next_command()
+
+
+# ── CAMERA ───────────────────────────────────────────────────────────────────
+
+func _cmd_camera(cmd: CutsceneCommand) -> void:
+	var duration: float = cmd.params.get("duration", 1.0)
+	var actual_duration := duration / _speed_multiplier
+
+	# 카메라 추적 모드
+	var follow_actor: String = cmd.params.get("follow_actor", "")
+	if follow_actor != "":
+		var actor: Actor = _actors.get(follow_actor)
+		if actor:
+			var tween := create_tween()
+			tween.tween_property(_camera, "global_position", actor.global_position, actual_duration)
+			await tween.finished
+			print("  → CAMERA FOLLOW: ", follow_actor)
+		_execute_next_command()
+		return
+
+	# 위치 이동 모드
+	var target_tile: Vector2i = cmd.params.get("target_tile", Vector2i.ZERO)
+	var zoom_level: float = cmd.params.get("zoom", 1.0)
+
+	@warning_ignore("integer_division")
+	var target_pos := Vector2(
+		target_tile.x * GameManager.GRID_SIZE + GameManager.GRID_SIZE / 2,
+		target_tile.y * GameManager.GRID_SIZE + GameManager.GRID_SIZE / 2
+	)
+
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(_camera, "global_position", target_pos, actual_duration)
+	tween.tween_property(_camera, "zoom", Vector2(zoom_level, zoom_level), actual_duration)
+	await tween.finished
+
+	print("  → CAMERA: tile ", target_tile, " zoom ", zoom_level)
+
+	_execute_next_command()
+
+
+# ── DESPAWN ──────────────────────────────────────────────────────────────────
+
+func _cmd_despawn(cmd: CutsceneCommand) -> void:
+	var actor_id: String = cmd.params.get("actor_id", "")
+
+	var actor: Actor = _actors.get(actor_id)
+	if actor:
+		actor.queue_free()
+		_actors.erase(actor_id)
+		print("  → DESPAWN: ", actor_id)
+
+	_execute_next_command()
+
+
+# ── SET_FLAG ─────────────────────────────────────────────────────────────────
+
+func _cmd_set_flag(cmd: CutsceneCommand) -> void:
+	var flag_name: String = cmd.params.get("flag_name", "")
+	var value: Variant = cmd.params.get("value", true)
+
+	GameManager.set_flag(flag_name, value)
+	print("  → SET_FLAG: ", flag_name, " = ", value)
+
+	_execute_next_command()
+
+
+# ── FADE ─────────────────────────────────────────────────────────────────────
+
+func _cmd_fade(cmd: CutsceneCommand) -> void:
+	var fade_type: String = cmd.params.get("fade_type", "in")
+	var duration: float = cmd.params.get("duration", 1.0)
+	var color: Color = cmd.params.get("color", Color.BLACK)
+	var actual_duration := duration / _speed_multiplier
+
+	if fade_type == "in":
+		# 어두움 → 밝음
+		_fade_rect.color = Color(color.r, color.g, color.b, 1.0)
+		var tween := create_tween()
+		tween.tween_property(_fade_rect, "color:a", 0.0, actual_duration)
+		await tween.finished
+		_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	else:
-		# 마지막 시퀀스면 터치 대기
-		_touch_hint_label.visible = true
+		# 밝음 → 어두움
+		_fade_rect.color = Color(color.r, color.g, color.b, 0.0)
+		var tween := create_tween()
+		tween.tween_property(_fade_rect, "color:a", 1.0, actual_duration)
+		await tween.finished
+
+	print("  → FADE: ", fade_type, " (", duration, "s)")
+
+	_execute_next_command()
 
 
-func _process_auto_advance(delta: float) -> void:
-	# 터치 중이면 가속
-	var delay := auto_advance_delay
-	if _is_touching:
-		delay /= touch_speed_multiplier
-	
-	_auto_advance_timer += delta
-	
-	if _auto_advance_timer >= delay:
-		_waiting_for_auto_advance = false
-		_advance_to_next()
+# ── SE ───────────────────────────────────────────────────────────────────────
+
+func _cmd_se(cmd: CutsceneCommand) -> void:
+	var sound_id: String = cmd.params.get("sound_id", "")
+
+	# TODO: 사운드 재생 시스템 연동
+	print("  → SE: ", sound_id)
+
+	_execute_next_command()
 
 
-func _advance_to_next() -> void:
-	_current_index += 1
-	
-	if _current_index >= _sequences.size():
-		_on_chapter_complete()
+# ═══════════════════════════════════════════════════════════════════════════════
+# Cutscene Completion
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _complete_cutscene() -> void:
+	_is_running = false
+
+	if _cutscene:
+		# 종료 후 RNA 업데이트
+		GameManager.current_screen = _cutscene.next_screen
+		for key in _cutscene.on_complete_data:
+			_rna[key] = _cutscene.on_complete_data[key]
+
+		print("컷신 완료: ", _cutscene.id, " → ", _cutscene.next_screen)
 	else:
-		_start_sequence()
+		GameManager.current_screen = "explore"
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Touch Handling
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func _on_touch_begin() -> void:
-	if _is_typing:
-		# 타이핑 중이면 즉시 완료
-		_displayed_text = _full_text
-		_text_label.text = _displayed_text
-		_char_index = _full_text.length()
-		_on_typing_complete()
-	elif _waiting_for_auto_advance:
-		# 자동 진행 대기 중이면 즉시 다음으로
-		_waiting_for_auto_advance = false
-		_advance_to_next()
-	elif not _is_typing and not _waiting_for_auto_advance:
-		# 마지막 시퀀스에서 대기 중이면 완료
-		if _current_index >= _sequences.size() - 1:
-			_advance_to_next()
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Chapter Completion
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func _on_chapter_complete() -> void:
-	GameManager.complete_prologue()
-	
-	# 다음 챕터 확인
-	var next_chapter := _registry.get_next_chapter(chapter_id)
-	if next_chapter != "":
-		var next_screen := StoryScreen.new()
-		next_screen.chapter_id = next_chapter
-		transition_requested.emit(next_screen)
-	else:
-		var village := VillageScreen.new()
-		transition_requested.emit(village)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Event Handling
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func _handle_event(event_id: String) -> void:
-	match event_id:
-		"unlock_wukong":
-			GameManager.set_flag("wukong_unlocked", true)
-		_:
-			pass
+	finished.emit()

@@ -609,6 +609,9 @@ var party_members: Array[String] = ["sanzang"]
 ## 파티 리더
 var party_leader: String = "sanzang"
 
+## 컷신 관련
+var cutscene_id: String = ""
+
 ## 전투 관련
 var enemy_id: String = ""
 var from_battle: bool = false
@@ -680,6 +683,7 @@ func to_rna() -> Dictionary:
 		"party_leader": party_leader,
 		"coin": coin,
 		"enemy_id": enemy_id,
+		"cutscene_id": cutscene_id,
 		"flags": _flags.duplicate()
 	}
 	print("=== GameManager.to_rna() ===")

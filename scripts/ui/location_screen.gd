@@ -338,9 +338,10 @@ func _on_investigate_interaction(interact: InteractionData) -> void:
 
 
 func _on_story_interaction(interact: InteractionData) -> void:
-	var story_screen := StoryScreen.new()
-	story_screen.chapter_id = interact.target_id
-	transition_requested.emit(story_screen)
+	# RNA 업데이트 후 화면 전환
+	GameManager.current_screen = "animation"
+	GameManager.cutscene_id = interact.target_id
+	transition_requested.emit(StoryScreen.new())
 
 
 func _on_battle_interaction(interact: InteractionData) -> void:
