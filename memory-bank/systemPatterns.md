@@ -122,14 +122,43 @@ Node2D
 ```
 main.gd
     │
-    ├── TitleScreen → transition_requested
+    ├── TitleScreen
     │       ↓
-    ├── LocationScreen → transition_requested
+    ├── StoryScreen (컷신 시퀀스)
     │       ↓
-    ├── DialogueScreen → transition_requested
+    ├── ExploreScreen ←→ BattleScreen
     │       ↓
-    └── Battle (별도 씬)
+    ├── LocationScreen → LocationScreen (위치 이동)
+    │       ↓
+    └── DialoguePanel / ShopPanel (오버레이)
 ```
+
+### 5. 컷신 명령 시퀀스 패턴
+
+컷신은 명령 배열을 async 루프로 순차 실행:
+
+```gdscript
+# CutsceneCommand
+enum CommandType { SPAWN, MOVE, DIALOGUE, WAIT, ANIMATE, CAMERA, DESPAWN, SET_FLAG, FADE, SE }
+
+# CutsceneData
+var commands: Array[CutsceneCommand]
+
+# StoryScreen
+func _execute_next_command() -> void:
+    var cmd := _cutscene.commands[_command_index]
+    _command_index += 1
+    match cmd.type:
+        SPAWN: _cmd_spawn(cmd)     # 즉시 → _execute_next_command()
+        MOVE: _cmd_move(cmd)       # await movement_finished → _execute_next_command()
+        DIALOGUE: _cmd_dialogue(cmd) # await dialogue_finished → _execute_next_command()
+        ...
+```
+
+**장점**:
+- 데이터로 연출 정의 (Code-First)
+- 새 명령 타입 쉽게 추가 가능
+- 터치 가속으로 전체 속도 제어
 
 ## 칸 기반 전투 시스템
 
@@ -222,4 +251,6 @@ Roster (전체 동료)
 1. **새 캐릭터**: CharacterData 추가, 레지스트리 등록
 2. **새 스킬**: SkillData 추가, 타겟 패턴 정의
 3. **새 맵**: LocationScreen 확장
-4. **새 이벤트**: 이벤트 명령 시퀀스 작성
+4. **새 컷신**: cutscenes/ 폴더에 파일 생성, CutsceneRegistry에 등록
+5. **새 NPC**: npcs/ 폴더에 파일 생성, NPCRegistry에 등록
+6. **새 상점**: shops/ 폴더에 파일 생성, ShopRegistry에 등록

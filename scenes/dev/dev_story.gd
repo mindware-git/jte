@@ -12,7 +12,7 @@ extends Node2D
 
 func _ready() -> void:
 	# 컷신 테스트용 RNA 설정
-	GameManager.current_screen = "animation"
+	GameManager.current_screen = "story"
 	GameManager.cutscene_id = test_cutscene_id
 	GameManager.current_location = "bluewood_village"
 	GameManager.party_members = ["sanzang"]

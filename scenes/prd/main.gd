@@ -30,7 +30,7 @@ func _create_screen() -> void:
 			screen = ExploreScreen.new()
 		"battle":
 			screen = BattleScreen.new()
-		"animation":
+		"story":
 			screen = StoryScreen.new()
 		# "select":
 		# 	screen = SaveSlotScreen.new()

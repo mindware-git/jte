@@ -115,8 +115,9 @@ func _on_new_game_pressed() -> void:
 	# 게임 상태 초기화
 	GameManager.reset_state()
 	
-	# ExploreScreen으로 이동
-	GameManager.current_screen = "explore"
+	# 프롤로그 컷신부터 시작
+	GameManager.current_screen = "story"
+	GameManager.cutscene_id = "part1_opening"
 	finished.emit()
 
 

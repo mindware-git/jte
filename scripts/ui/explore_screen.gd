@@ -139,6 +139,7 @@ func _on_gate_entered(target_location: String, target_tile: Vector2i) -> void:
 	print("Gate 진입: ", target_location, " at ", target_tile)
 	
 	# RNA 업데이트
+	GameManager.current_screen = "explore"
 	GameManager.current_location = target_location
 	GameManager.set_location_state(target_location, "player_tile", target_tile)
 	
@@ -193,6 +194,12 @@ func _on_interactable_interacted(interactable: Interactable) -> void:
 			var enemy_id: String = interactable.interact_data.get("enemy_id", "")
 			print("  → 전투 진입: ", enemy_id)
 			_start_battle(enemy_id)
+		"story":
+			# 컷신 발동
+			var cutscene_id: String = interactable.interact_data.get("cutscene_id", "")
+			print("  → 컷신 발동: ", cutscene_id)
+			if cutscene_id != "":
+				_start_cutscene(cutscene_id)
 		_:
 			print("  → 알 수 없는 타입: ", interactable.interact_type)
 
@@ -202,6 +209,15 @@ func _start_battle(enemy_id: String) -> void:
 	GameManager.current_screen = "battle"
 	GameManager.enemy_id = enemy_id
 	GameManager.from_battle = true
+	
+	# 화면 전환 신호
+	finished.emit()
+
+
+func _start_cutscene(cutscene_id: String) -> void:
+	# RNA 업데이트
+	GameManager.current_screen = "story"
+	GameManager.cutscene_id = cutscene_id
 	
 	# 화면 전환 신호
 	finished.emit()
