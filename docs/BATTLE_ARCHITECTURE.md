@@ -92,7 +92,7 @@ RefCounted
 Node2D
 ├── Character         # 기본 캐릭터 (탐험/전투 공통)
 │   └── BattleCharacter  # 전투 전용 캐릭터
-└── BattleGrid        # 그리드 시스템
+└── TacticGrid        # 그리드 시스템
 ```
 
 ### BattleData.Unit 구조
@@ -210,7 +210,7 @@ EnemyAI
 EnemyAI.decide_action(enemy, battle_data, skill_registry)
     │
     ├── 1. 공격 범위 내 타겟 확인
-    │       └── BattleGrid 활용
+    │       └── TacticGrid 활용
     │
     ├── 2. 스킬 사용 가능 확인
     │       └── enemy.skills → SkillRegistry → MP/SG 체크

@@ -1,8 +1,8 @@
-class_name BattleGrid
+class_name TacticGrid
 extends Node2D
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# BattleGrid
+# TacticGrid
 # 전투용 그리드 시스템 (64x64 칸)
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -14,16 +14,28 @@ const GRID_WIDTH := 16  # 1024px
 const GRID_HEIGHT := 9  # 576px
 
 # 칸 노드들
-var _cells: Dictionary = {}  # Vector2i -> BattleGridCell
+var _cells: Dictionary = {}  # Vector2i -> TacticGridCell
 var _movable_cells: Array[Vector2i] = []
 var _selected_cell: Vector2i = Vector2i(-1, -1)
+
+# A* 경로 탐색
+var _astar: AStarGrid2D = null
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Initialization
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _ready() -> void:
+	_setup_astar()
 	_create_grid()
+
+
+func _setup_astar() -> void:
+	_astar = AStarGrid2D.new()
+	_astar.region = Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
+	_astar.cell_size = Vector2(CELL_SIZE, CELL_SIZE)
+	_astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER  # 4방향만
+	_astar.update()
 
 
 func _create_grid() -> void:
@@ -39,9 +51,9 @@ func _create_cell(grid_pos: Vector2i) -> Control:
 	var cell := Control.new()
 	cell.name = "Cell_%d_%d" % [grid_pos.x, grid_pos.y]
 	
-	# 위치 설정
+	# 위치 설정: 셀 중심 기준 (grid_to_pixel이 중심 반환)
 	var pixel_pos := grid_to_pixel(grid_pos)
-	cell.position = pixel_pos
+	cell.position = pixel_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
 	cell.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 	
 	# 색상 사각형 (기본 투명)
@@ -64,22 +76,91 @@ func _create_cell(grid_pos: Vector2i) -> Control:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Coordinate Conversion
+# Coordinate Conversion (GameManager 위임)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func grid_to_pixel(grid_pos: Vector2i) -> Vector2:
-	return Vector2(grid_pos.x * CELL_SIZE, grid_pos.y * CELL_SIZE)
+	return GameManager.grid_to_pixel(grid_pos)
 
 
 func pixel_to_grid(pixel_pos: Vector2) -> Vector2i:
-	return Vector2i(int(pixel_pos.x / CELL_SIZE), int(pixel_pos.y / CELL_SIZE))
+	return GameManager.pixel_to_grid(pixel_pos)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Movable Cells
+# Range Display (2단계 범위 시스템)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-## 이동 가능한 칸 표시
+## 가용 범위 표시 (흰색)
+func show_cast_range(from_pos: Vector2i, cast_range: int, occupied: Array[Vector2i] = []) -> void:
+	clear_highlights()
+	
+	if cast_range == 0:
+		# cast_range=0이면 본인 위치만
+		_movable_cells = [from_pos]
+		_set_cell_color(from_pos, Color(1, 1, 1, 0.3))
+	else:
+		# 맨해튼 거리 기반 가용 범위
+		for x in range(-cast_range, cast_range + 1):
+			for y in range(-cast_range, cast_range + 1):
+				var dist := absi(x) + absi(y)
+				if dist <= cast_range:
+					var grid_pos := Vector2i(from_pos.x + x, from_pos.y + y)
+					if _is_valid_grid_pos(grid_pos) and grid_pos not in occupied:
+						_movable_cells.append(grid_pos)
+						_set_cell_color(grid_pos, Color(1, 1, 1, 0.3))
+
+
+## 효과 범위 표시 (빨간색/녹색)
+func show_effect_range(center: Vector2i, area_pattern, highlight_color: Color = Color(1, 0.3, 0.3, 0.3)) -> void:
+	# 기존 표시 유지하면서 효과 범위 추가
+	var effect_cells := _get_area_pattern_cells(center, area_pattern)
+	
+	for grid_pos in effect_cells:
+		if _is_valid_grid_pos(grid_pos):
+			_set_cell_color(grid_pos, highlight_color)
+
+
+## AreaPattern으로부터 셀 목록 생성
+func _get_area_pattern_cells(center: Vector2i, area_pattern) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	
+	# area_pattern이 Array면 직접 사용 (이동 범위 등)
+	if area_pattern is Array:
+		for offset in area_pattern:
+			cells.append(Vector2i(center.x + offset.x, center.y + offset.y))
+		return cells
+	
+	# SkillData.AreaPattern enum 처리
+	var pattern_type = area_pattern
+	match pattern_type:
+		0:  # SINGLE
+			cells.append(center)
+		1:  # CROSS_1
+			cells.append_array([
+				Vector2i(center.x, center.y - 1),
+				Vector2i(center.x - 1, center.y),
+				center,
+				Vector2i(center.x + 1, center.y),
+				Vector2i(center.x, center.y + 1)
+			])
+		2:  # SQUARE_3x3
+			for dx in range(-1, 2):
+				for dy in range(-1, 2):
+					cells.append(Vector2i(center.x + dx, center.y + dy))
+		3:  # LINE_3
+			cells.append_array([
+				Vector2i(center.x, center.y - 1),
+				center,
+				Vector2i(center.x, center.y + 1)
+			])
+		_:
+			cells.append(center)
+	
+	return cells
+
+
+## 이동 가능한 칸 표시 (기존 호환성 유지)
 func show_movable_cells(from_pos: Vector2i, move_range: int, occupied: Array[Vector2i]) -> void:
 	clear_highlights()
 	
@@ -218,3 +299,69 @@ func _set_cell_color(grid_pos: Vector2i, color: Color) -> void:
 
 func _on_cell_pressed(grid_pos: Vector2i) -> void:
 	cell_clicked.emit(grid_pos)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# A* Pathfinding
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## 점유 상태 업데이트
+func update_occupied(occupied: Array[Vector2i]) -> void:
+	if _astar == null:
+		return
+	
+	# 모든 칸 초기화
+	for x in range(GRID_WIDTH):
+		for y in range(GRID_HEIGHT):
+			_astar.set_point_solid(Vector2i(x, y), false)
+	
+	# 점유된 칸 설정
+	for pos in occupied:
+		if _is_valid_grid_pos(pos):
+			_astar.set_point_solid(pos, true)
+
+
+## 경로 기반 이동 가능 칸 계산 (A* 사용)
+func get_reachable_cells(from_pos: Vector2i, move_range: int, occupied: Array[Vector2i]) -> Array[Vector2i]:
+	# from_pos(이동하는 캐릭터 위치)를 제외한 점유 목록으로 업데이트
+	var filtered_occupied: Array[Vector2i] = []
+	for pos in occupied:
+		if pos != from_pos:
+			filtered_occupied.append(pos)
+	update_occupied(filtered_occupied)
+	
+	var reachable: Array[Vector2i] = []
+	
+	for x in range(GRID_WIDTH):
+		for y in range(GRID_HEIGHT):
+			var target := Vector2i(x, y)
+			if target == from_pos:
+				continue
+			
+			# A* 경로 탐색
+			var path := _astar.get_id_path(from_pos, target)
+			
+			# 경로가 존재하고, 길이가 move_range 이하인 경우
+			# path는 [from_pos, ..., target] 형태이므로 실제 이동 칸 수는 path.size() - 1
+			if path.size() > 1 and path.size() - 1 <= move_range:
+				reachable.append(target)
+	
+	return reachable
+
+
+## 이동 경로 반환 (애니메이션용)
+func get_move_path(from_pos: Vector2i, to_pos: Vector2i) -> Array[Vector2i]:
+	if _astar == null:
+		return []
+	
+	return _astar.get_id_path(from_pos, to_pos)
+
+
+## A* 기반 이동 가능한 칸 표시
+func show_reachable_cells(from_pos: Vector2i, move_range: int, occupied: Array[Vector2i]) -> void:
+	clear_highlights()
+	
+	_movable_cells = get_reachable_cells(from_pos, move_range, occupied)
+	
+	for grid_pos in _movable_cells:
+		_set_cell_color(grid_pos, Color(1, 1, 1, 0.3))  # 흰색 반투명

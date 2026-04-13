@@ -72,16 +72,14 @@ class Unit:
 	# 스킬 목록
 	var skills: Array[String] = []
 	
-	# 공격 범위 (상대 좌표 배열)
-	var attack_range: Array[Vector2i] = []
+	# 공격 범위 (2단계 시스템)
+	var attack_cast_range: int = 1    ## 기본 공격 가용 범위
+	var attack_effect_range: int = 1  ## 기본 공격 효과 범위
 	
 	func _init(p_id: String, p_name: String, p_side: BattleData.Side) -> void:
 		id = p_id
 		display_name = p_name
 		side = p_side
-		
-		# 기본 공격 범위 설정 (인접한 4칸)
-		attack_range = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
 	
 	func take_damage(amount: int) -> int:
 		var actual := maxi(1, amount - defense)
@@ -99,14 +97,17 @@ class Unit:
 	func is_enemy() -> bool:
 		return side == BattleData.Side.ENEMY
 	
-	# 현재 위치를 기준으로 공격 가능한 칸들 반환
+	# 현재 위치를 기준으로 공격 가능한 칸들 반환 (가용 범위 기반)
 	func get_attackable_cells() -> Array[Vector2i]:
 		var attackable_cells: Array[Vector2i] = []
-		for offset in attack_range:
-			var cell_pos := grid_pos + offset
-			# 전장 범위 체크 (임시로 0~15, 0~15로 가정)
-			if cell_pos.x >= 0 and cell_pos.x < 16 and cell_pos.y >= 0 and cell_pos.y < 16:
-				attackable_cells.append(cell_pos)
+		for x in range(-attack_cast_range, attack_cast_range + 1):
+			for y in range(-attack_cast_range, attack_cast_range + 1):
+				var dist := absi(x) + absi(y)
+				if dist <= attack_cast_range and (x != 0 or y != 0):
+					var cell_pos := Vector2i(grid_pos.x + x, grid_pos.y + y)
+					# 전장 범위 체크 (임시로 0~15, 0~15로 가정)
+					if cell_pos.x >= 0 and cell_pos.x < 16 and cell_pos.y >= 0 and cell_pos.y < 16:
+						attackable_cells.append(cell_pos)
 		return attackable_cells
 
 

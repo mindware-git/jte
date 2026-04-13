@@ -10,6 +10,7 @@ signal finished()
 
 # UI 컨테이너
 var _ui_container: Control
+var _canvas_layer: CanvasLayer
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Lifecycle
@@ -25,10 +26,16 @@ func _ready() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _create_ui_container() -> void:
+	# CanvasLayer 생성 (UI 레이어 분리)
+	_canvas_layer = CanvasLayer.new()
+	_canvas_layer.name = "UILayer"
+	add_child(_canvas_layer)
+	
+	# UI 컨테이너는 CanvasLayer 아래에
 	_ui_container = Control.new()
 	_ui_container.name = "UIContainer"
 	_ui_container.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(_ui_container)
+	_canvas_layer.add_child(_ui_container)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -42,34 +49,39 @@ func _create_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_ui_container.add_child(bg)
 	
+	# 메인 VBoxContainer (타이틀 + 버튼 통합)
+	var main_vbox := VBoxContainer.new()
+	main_vbox.name = "MainVBox"
+	main_vbox.set_anchors_preset(Control.PRESET_CENTER)
+	main_vbox.position = Vector2(-150, -200)  # 중앙 정렬 보정
+	main_vbox.size = Vector2(300, 400)
+	_ui_container.add_child(main_vbox)
+	
+	# 상단 여백
+	var top_spacer := Control.new()
+	top_spacer.custom_minimum_size = Vector2(0, 50)
+	main_vbox.add_child(top_spacer)
+	
 	# 타이틀
 	var title := Label.new()
-	title.text = "환상서유기"
-	title.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	title.position = Vector2(0, 150)
-	title.size = Vector2(1280, 80)
+	title.text = "동유기"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 48)
 	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.2))
-	_ui_container.add_child(title)
+	main_vbox.add_child(title)
 	
 	# 부제목
 	var subtitle := Label.new()
-	subtitle.text = "Fantasy Journey West"
-	subtitle.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	subtitle.position = Vector2(0, 240)
-	subtitle.size = Vector2(1280, 40)
+	subtitle.text = "Journey to East"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 20)
 	subtitle.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
-	_ui_container.add_child(subtitle)
+	main_vbox.add_child(subtitle)
 	
-	# 버튼 컨테이너
-	var btn_container := VBoxContainer.new()
-	btn_container.set_anchors_preset(Control.PRESET_CENTER)
-	btn_container.position = Vector2(-150, 50)  # 중앙에서 오프셋
-	btn_container.size = Vector2(300, 200)
-	_ui_container.add_child(btn_container)
+	# 타이틀과 버튼 사이 간격
+	var mid_spacer := Control.new()
+	mid_spacer.custom_minimum_size = Vector2(0, 60)
+	main_vbox.add_child(mid_spacer)
 	
 	# 새 게임 버튼
 	var new_game_btn := Button.new()
@@ -77,12 +89,12 @@ func _create_ui() -> void:
 	new_game_btn.custom_minimum_size = Vector2(300, 60)
 	new_game_btn.add_theme_font_size_override("font_size", 24)
 	new_game_btn.pressed.connect(_on_new_game_pressed)
-	btn_container.add_child(new_game_btn)
+	main_vbox.add_child(new_game_btn)
 	
-	# 간격
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 20)
-	btn_container.add_child(spacer)
+	# 버튼 간격
+	var btn_spacer := Control.new()
+	btn_spacer.custom_minimum_size = Vector2(0, 20)
+	main_vbox.add_child(btn_spacer)
 	
 	# 이어하기 버튼
 	var continue_btn := Button.new()
@@ -96,9 +108,9 @@ func _create_ui() -> void:
 	if has_save:
 		continue_btn.pressed.connect(_on_continue_pressed)
 	
-	btn_container.add_child(continue_btn)
+	main_vbox.add_child(continue_btn)
 	
-	#버전 표시
+	# 버전 표시 (하단 고정)
 	var version := Label.new()
 	version.text = "v0.1.0 - Button World MVP"
 	version.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)

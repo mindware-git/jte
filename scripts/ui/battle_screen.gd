@@ -37,13 +37,16 @@ var _characters_parent: Node2D = null
 var _turn_label: Label
 var _log_label: Label
 var _action_menu: VBoxContainer
-var _battle_grid: BattleGrid = null
+var _battle_grid: TacticGrid = null
 var _confirm_dialog: Control = null
 var _confirm_label: Label = null
 var _confirm_action_callback: Callable = Callable()
 var _item_menu: VBoxContainer = null
 var _skill_menu: VBoxContainer = null
 var _cancel_action_btn: Button = null
+
+# 카메라
+var _camera: Camera2D = null
 
 # 선택 상태
 var _selected_actor: BattleData.Unit = null
@@ -53,8 +56,13 @@ var _selected_skill_id: String = ""
 var _selected_item_id: String = ""
 var _is_player_turn: bool = true
 
+# 2단계 범위 시스템 상태
+var _selected_cast_pos: Vector2i = Vector2i(-1, -1)  # 시전 중심점
+var _range_phase: int = 0  # 0: 없음, 1: 가용범위 선택, 2: 효과범위 확인
+
 # 범위 색상 상수
 const RANGE_COLOR_MOVE := Color(0.3, 0.7, 1.0, 0.3)    # 파란색 (이동)
+const RANGE_COLOR_CAST := Color(1.0, 1.0, 1.0, 0.3)    # 흰색 (가용 범위)
 const RANGE_COLOR_ATTACK := Color(1.0, 0.3, 0.3, 0.3)   # 빨간색 (공격/적 대상)
 const RANGE_COLOR_ALLY := Color(0.3, 1.0, 0.5, 0.3)     # 녹색 (아군 대상)
 
@@ -179,16 +187,18 @@ func _create_ui() -> void:
 
 	# 선택 취소 버튼 생성
 	_create_cancel_action_button()
+	
+	# 카메라 생성
+	_create_camera()
 
 func _create_cancel_action_button() -> void:
 	_cancel_action_btn = Button.new()
-	_cancel_action_btn.text = "✖ 선택 취소"
-	_cancel_action_btn.custom_minimum_size = Vector2(140, 50)
-	_cancel_action_btn.position = Vector2(850, 600)
+	_cancel_action_btn.text = "← 뒤로"
+	_cancel_action_btn.custom_minimum_size = Vector2(100, 40)
+	_cancel_action_btn.position = Vector2(500, 520)
 	_cancel_action_btn.visible = false
-	_cancel_action_btn.add_theme_font_size_override("font_size", 20)
-	_cancel_action_btn.pressed.connect(_on_cancel_action_pressed)
-	# 호버 스타일 등 추가 가능하지만 기본으로 둠
+	_cancel_action_btn.add_theme_font_size_override("font_size", 18)
+	_cancel_action_btn.pressed.connect(_on_back_button_pressed)
 	add_child(_cancel_action_btn)
 
 func _show_cancel_action_button() -> void:
@@ -200,7 +210,8 @@ func _hide_cancel_action_button() -> void:
 	if _cancel_action_btn:
 		_cancel_action_btn.visible = false
 
-func _on_cancel_action_pressed() -> void:
+## 뒤로 가기 버튼 (action menu로 돌아가기)
+func _on_back_button_pressed() -> void:
 	_hide_battle_grid()
 	_hide_confirm_dialog()
 	_hide_skill_menu()
@@ -210,13 +221,56 @@ func _on_cancel_action_pressed() -> void:
 	_selected_target = null
 	_selected_item_id = ""
 	_selected_skill_id = ""
+	_range_phase = 0
 	
 	if _selected_actor:
 		_log_label.text = "행동을 선택하세요."
 		if _character_nodes.has(_selected_actor.id):
 			_show_action_menu(_character_nodes[_selected_actor.id])
-		else:
-			_action_menu.visible = true
+
+
+## 기존 호환성 유지
+func _on_cancel_action_pressed() -> void:
+	_on_back_button_pressed()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Camera
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _create_camera() -> void:
+	_camera = Camera2D.new()
+	_camera.enabled = true
+	_camera.position_smoothing_enabled = true
+	_camera.position_smoothing_speed = 5.0
+	_camera.zoom = Vector2(1, 1)
+	add_child(_camera)
+
+
+## 카메라를 지정 위치로 부드럽게 이동
+func _move_camera_to(target_pos: Vector2, duration: float = 0.5) -> void:
+	if _camera == null:
+		return
+	
+	var tween := create_tween()
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.tween_property(_camera, "position", target_pos, duration)
+
+
+## 카메라를 캐릭터 위치로 이동
+func _move_camera_to_unit(unit: BattleData.Unit) -> void:
+	if unit == null:
+		return
+	
+	var target_pos := _grid_to_pixel(unit.grid_pos)
+	_move_camera_to(target_pos)
+
+
+## 카메라를 지정 그리드 위치로 이동
+func _move_camera_to_grid(grid_pos: Vector2i) -> void:
+	var target_pos := _grid_to_pixel(grid_pos)
+	_move_camera_to(target_pos)
 
 
 func _create_action_menu() -> void:
@@ -248,12 +302,7 @@ func _create_action_menu() -> void:
 		btn.pressed.connect(_on_action_menu_selected.bind(action_info.type))
 		vbox.add_child(btn)
 	
-	# 취소 버튼
-	var cancel_btn := Button.new()
-	cancel_btn.text = "✖ 취소"
-	cancel_btn.custom_minimum_size = Vector2(120, 40)
-	cancel_btn.pressed.connect(_hide_action_menu)
-	vbox.add_child(cancel_btn)
+	# 취소 버튼 없음 - action menu는 첫 단계이므로 취소할 필요 없음
 
 
 func _show_action_menu(character: Actor) -> void:
@@ -443,45 +492,82 @@ func _show_skill_range(skill_id: String) -> void:
 	if not skill:
 		return
 	
-	# 스킬 범위 패턴 생성
-	var range_pattern: Array[Vector2i] = _get_skill_range_pattern(skill)
-	
-	# 점유 칸 및 색상 결정
-	var occupied: Array[Vector2i] = []
-	var range_color := RANGE_COLOR_ATTACK
-	
-	if skill.type == SkillData.SkillType.HEAL or skill.type == SkillData.SkillType.BUFF:
-		# 치유/버프 스킬은 녹색, 아군 위치만 유효
-		range_color = RANGE_COLOR_ALLY
-	else:
-		# 공격/디버프 스킬은 빨간색
-		range_color = RANGE_COLOR_ATTACK
-	
-	_show_range_cells(_selected_actor.grid_pos, range_pattern, occupied, range_color)
-	
-	# 선택된 스킬 ID 저장 (그리드 클릭 시 사용)
+	# 선택된 스킬 ID 저장
 	_selected_skill_id = skill_id
 	_selected_action = BattleData.ActionType.SKILL
+	
+	# 2단계 범위 시스템
+	if skill.cast_range == 0:
+		# cast_range=0이면 본인 위치에서 바로 효과 범위 표시
+		_selected_cast_pos = _selected_actor.grid_pos
+		_show_effect_range_for_skill(skill, _selected_cast_pos)
+	else:
+		# 가용 범위 표시 (흰색)
+		_range_phase = 1
+		_log_label.text = "시전 위치를 선택하세요."
+		_show_cast_range_for_skill(skill)
 
 
-func _get_skill_range_pattern(skill: SkillData) -> Array[Vector2i]:
-	var range_pattern: Array[Vector2i] = []
-	match skill.range_type:
-		SkillData.SkillRangeType.SINGLE:
-			range_pattern = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
-		SkillData.SkillRangeType.CROSS_1:
-			range_pattern = [
-				Vector2i(0, -1), Vector2i(0, -2),
-				Vector2i(-1, 0), Vector2i(0, 0), Vector2i(1, 0),
-				Vector2i(0, 1), Vector2i(0, 2)
+## 스킬의 가용 범위 표시
+func _show_cast_range_for_skill(skill: SkillData) -> void:
+	if _selected_actor == null:
+		return
+	
+	# 그리드 동적 생성
+	if _battle_grid == null:
+		_battle_grid = TacticGrid.new()
+		add_child(_battle_grid)
+		_battle_grid.cell_clicked.connect(_on_grid_cell_clicked)
+		await get_tree().process_frame
+	
+	_battle_grid.visible = true
+	_battle_grid.show_cast_range(_selected_actor.grid_pos, skill.cast_range, [])
+	_show_cancel_action_button()
+
+
+## 스킬의 효과 범위 표시
+func _show_effect_range_for_skill(skill: SkillData, center: Vector2i) -> void:
+	if _battle_grid == null:
+		return
+	
+	# 색상 결정
+	var effect_color := RANGE_COLOR_ATTACK
+	if skill.type == SkillData.SkillType.HEAL or skill.type == SkillData.SkillType.BUFF:
+		effect_color = RANGE_COLOR_ALLY
+	
+	# 효과 범위 표시
+	_battle_grid.show_effect_range(center, skill.area_pattern, effect_color)
+	_range_phase = 2
+	
+	# 뒤로 버튼 표시
+	_show_cancel_action_button()
+	
+	# confirm 창 표시
+	_show_confirm_dialog(
+		"이 위치에 %s 사용?" % skill.name,
+		center,
+		_on_skill_confirmed
+	)
+
+
+## AreaPattern으로부터 셀 좌표 생성 (2단계 범위 시스템)
+func _get_area_pattern_cells(area_pattern: SkillData.AreaPattern) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	match area_pattern:
+		SkillData.AreaPattern.SINGLE:
+			cells = [Vector2i(0, 0)]
+		SkillData.AreaPattern.CROSS_1:
+			cells = [
+				Vector2i(0, -1), Vector2i(-1, 0), Vector2i(0, 0),
+				Vector2i(1, 0), Vector2i(0, 1)
 			]
-		SkillData.SkillRangeType.SQUARE_3x3:
+		SkillData.AreaPattern.SQUARE_3x3:
 			for dx in range(-1, 2):
 				for dy in range(-1, 2):
-					range_pattern.append(Vector2i(dx, dy))
-		SkillData.SkillRangeType.LINE_3:
-			range_pattern = [Vector2i(0, -1), Vector2i(0, 0), Vector2i(0, 1)]
-	return range_pattern
+					cells.append(Vector2i(dx, dy))
+		SkillData.AreaPattern.LINE_3:
+			cells = [Vector2i(0, -1), Vector2i(0, 0), Vector2i(0, 1)]
+	return cells
 
 
 func _on_item_selected(item_id: String) -> void:
@@ -595,13 +681,25 @@ func _on_confirm_accepted() -> void:
 
 func _on_confirm_cancelled() -> void:
 	_hide_confirm_dialog()
-	# 그리드는 끄지 않음. 
-	# 사용자가 대상을 다시 선택할 수 있도록 유지.
 	_selected_target = null
 	
-	if not is_instance_valid(_battle_grid) or not _battle_grid.visible:
-		# 그리드가 없었다면 (예: 자기 자신 대상 아이템 등) 액션 메뉴로 돌아감
-		_on_cancel_action_pressed()
+	# 가용 범위 선택 단계로 돌아가기
+	_range_phase = 1
+	
+	# 그리드가 있으면 가용 범위 다시 표시
+	if is_instance_valid(_battle_grid) and _battle_grid.visible and _selected_actor:
+		match _selected_action:
+			BattleData.ActionType.MOVE:
+				_show_movable_cells()
+			BattleData.ActionType.ATTACK:
+				_show_cast_range_for_attack()
+			BattleData.ActionType.SKILL:
+				var skill := _skill_registry.get_skill(_selected_skill_id)
+				if skill:
+					_show_cast_range_for_skill(skill)
+	else:
+		# 그리드가 없으면 action menu로 돌아감
+		_on_back_button_pressed()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -616,12 +714,23 @@ func _on_move_confirmed() -> void:
 	if target_pos == Vector2i(-1, -1):
 		return
 	
-	_selected_actor.grid_pos = target_pos
+	# A* 경로 가져오기
+	var path := _battle_grid.get_move_path(_selected_actor.grid_pos, target_pos)
 	
-	# 캐릭터 위치 업데이트
+	# 캐릭터 이동
 	if _character_nodes.has(_selected_actor.id):
 		var char_node: Actor = _character_nodes[_selected_actor.id]
-		char_node.position = _battle_grid.grid_to_pixel(target_pos) if _battle_grid else Vector2(target_pos.x * 64, target_pos.y * 64)
+		
+		if path.size() >= 2:
+			# 경로 따라 이동
+			char_node.move_along_path(path)
+			await char_node.movement_finished
+		else:
+			# 경로가 없으면 순간이동
+			char_node.position = _battle_grid.grid_to_pixel(target_pos)
+	
+	# 위치 업데이트
+	_selected_actor.grid_pos = target_pos
 	
 	# 그리드 제거
 	_hide_battle_grid()
@@ -748,6 +857,21 @@ func _on_grid_cell_clicked(grid_pos: Vector2i) -> void:
 	
 	_battle_grid.select_cell(grid_pos)
 	
+	# 2단계 범위 시스템 처리
+	if _range_phase == 1:
+		# 가용 범위에서 클릭 → 효과 범위 표시
+		_selected_cast_pos = grid_pos
+		
+		match _selected_action:
+			BattleData.ActionType.ATTACK:
+				_show_effect_range_for_attack(grid_pos)
+			BattleData.ActionType.SKILL:
+				var skill := _skill_registry.get_skill(_selected_skill_id)
+				if skill:
+					_show_effect_range_for_skill(skill, grid_pos)
+		return
+	
+	# 효과 범위 확인 단계 (_range_phase == 2) 또는 이동
 	match _selected_action:
 		BattleData.ActionType.MOVE:
 			_show_confirm_dialog(
@@ -816,7 +940,7 @@ func _show_range_cells(center: Vector2i, range_pattern: Array[Vector2i], occupie
 	
 	# 그리드 동적 생성
 	if _battle_grid == null:
-		_battle_grid = BattleGrid.new()
+		_battle_grid = TacticGrid.new()
 		add_child(_battle_grid)
 		_battle_grid.cell_clicked.connect(_on_grid_cell_clicked)
 		await get_tree().process_frame  # _ready() 완료 대기
@@ -839,14 +963,18 @@ func _show_movable_cells() -> void:
 		if not enemy.is_dead:
 			occupied.append(enemy.grid_pos)
 	
-	# 이동 범위 패턴 생성 (단순화된 버전 - 실제 구현에서는 더 복잡할 수 있음)
-	var move_range_pattern: Array[Vector2i] = []
-	for x in range(-_selected_actor.move_range, _selected_actor.move_range + 1):
-		for y in range(-_selected_actor.move_range, _selected_actor.move_range + 1):
-			if abs(x) + abs(y) <= _selected_actor.move_range and (x != 0 or y != 0):
-				move_range_pattern.append(Vector2i(x, y))
+	# 그리드 동적 생성
+	if _battle_grid == null:
+		_battle_grid = TacticGrid.new()
+		add_child(_battle_grid)
+		_battle_grid.cell_clicked.connect(_on_grid_cell_clicked)
+		await get_tree().process_frame
 	
-	_show_range_cells(_selected_actor.grid_pos, move_range_pattern, occupied, RANGE_COLOR_MOVE)
+	_battle_grid.visible = true
+	
+	# A* 기반 이동 가능한 칸 표시
+	_battle_grid.show_reachable_cells(_selected_actor.grid_pos, _selected_actor.move_range, occupied)
+	_show_cancel_action_button()
 
 
 func _hide_battle_grid() -> void:
@@ -894,9 +1022,8 @@ func _create_unit_from_character(char_id: String, side: BattleData.Side) -> Batt
 	unit.hp = char_data.max_hp
 	unit.max_mp = char_data.max_mp
 	unit.mp = char_data.max_mp
-	unit.attack = char_data.melee_power
-	unit.defense = char_data.max_hp / 20
-	unit.speed = int(char_data.max_speed / 20)
+	unit.attack = char_data.st_pow + char_data.st_att
+	unit.defense = char_data.st_def
 	return unit
 
 
@@ -1009,7 +1136,15 @@ func _update_turn_display() -> void:
 		# 현재 턴 캐릭터 하이라이트
 		_highlight_current_actor(actor)
 		
-		if not _is_player_turn:
+		# 카메라를 현재 턴 캐릭터 위치로 이동
+		_move_camera_to_unit(actor)
+		
+		if _is_player_turn:
+			# 아군 턴이면 자동으로 action menu 표시
+			_selected_actor = actor
+			if _character_nodes.has(actor.id):
+				_show_action_menu(_character_nodes[actor.id])
+		else:
 			print(">>> 적 턴 시작 - 0.5초 대기")
 			# 적 턴은 자동 진행
 			if is_inside_tree():
@@ -1081,8 +1216,59 @@ func _show_attackable_cells() -> void:
 	if _selected_actor == null:
 		return
 	
-	# 공격 범위: 점유된 칸도 모두 표시 (적군도 선택 가능하도록)
-	_show_range_cells(_selected_actor.grid_pos, _selected_actor.attack_range, [], RANGE_COLOR_ATTACK)
+	# 2단계 범위 시스템
+	if _selected_actor.attack_cast_range == 0:
+		# cast_range=0이면 본인 위치에서 바로 효과 범위 표시
+		_selected_cast_pos = _selected_actor.grid_pos
+		_show_effect_range_for_attack(_selected_cast_pos)
+	else:
+		# 가용 범위 표시 (흰색)
+		_range_phase = 1
+		_log_label.text = "공격할 위치를 선택하세요."
+		_show_cast_range_for_attack()
+
+
+## 공격의 가용 범위 표시
+func _show_cast_range_for_attack() -> void:
+	if _selected_actor == null:
+		return
+	
+	# 그리드 동적 생성
+	if _battle_grid == null:
+		_battle_grid = TacticGrid.new()
+		add_child(_battle_grid)
+		_battle_grid.cell_clicked.connect(_on_grid_cell_clicked)
+		await get_tree().process_frame
+	
+	_battle_grid.visible = true
+	_battle_grid.show_cast_range(_selected_actor.grid_pos, _selected_actor.attack_cast_range, [])
+	_show_cancel_action_button()
+
+
+## 공격의 효과 범위 표시
+func _show_effect_range_for_attack(center: Vector2i) -> void:
+	if _battle_grid == null:
+		return
+	
+	# 효과 범위 표시 (SINGLE 패턴)
+	_battle_grid.show_effect_range(center, SkillData.AreaPattern.SINGLE, RANGE_COLOR_ATTACK)
+	_range_phase = 2
+	
+	# 해당 위치에 적이 있으면 타겟 설정
+	var target_unit := _find_unit_at(center, "enemy")
+	if target_unit != null:
+		_selected_target = target_unit
+		_show_confirm_dialog(
+			"%s을(를) 공격?" % target_unit.display_name,
+			center,
+			_on_attack_confirmed
+		)
+	else:
+		_show_confirm_dialog(
+			"이 위치를 공격?",
+			center,
+			_on_attack_confirmed
+		)
 
 
 func _highlight_enemies() -> void:

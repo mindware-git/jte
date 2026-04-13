@@ -34,22 +34,8 @@ var _player_in_range: bool = false
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _ready() -> void:
-	_setup_collision_size()
 	_interaction_button.visible = false
 	_interaction_button.pressed.connect(_on_button_pressed)
-
-
-func _setup_collision_size() -> void:
-	var collision := get_node_or_null("CollisionShape2D") as CollisionShape2D
-	if collision and collision.shape is RectangleShape2D:
-		var shape := collision.shape as RectangleShape2D
-		if interact_type == "npc":
-			shape.size = Vector2(64 * 3, 64 * 3)  # 192x192 (3 grid)
-		else:
-			shape.size = Vector2(64, 64)
-		print("Interactable collision 크기 설정: ", name, " type: ", interact_type, " size: ", shape.size)
-	else:
-		print("Interactable collision 없음: ", name)
 
 
 func _on_body_entered(body: Node2D) -> void:

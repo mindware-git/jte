@@ -29,7 +29,8 @@ func _register_sanzang() -> void:
 	data.description = "동천취경의 여정을 이끄는 젊은 승려"
 	# 능력치 (힐러/서포터)
 	data.max_hp = 90
-	
+	data.max_mp = 120
+	_characters[data.id] = data
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 손오공 (Wukong)

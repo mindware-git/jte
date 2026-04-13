@@ -44,7 +44,7 @@
 - [x] Direction 애니메이션
 
 ### 전투 시스템
-- [x] BattleGrid 그리드 시스템
+- [x] TacticGrid 그리드 시스템
 - [x] BattleData (Unit, BattleCell, BattleAction)
 - [x] EnemyAI 기본 구조
 - [x] 칸 기반 타겟팅 설계

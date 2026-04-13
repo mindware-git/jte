@@ -114,7 +114,7 @@ RefCounted
 
 Node2D
 ├── Character         # 기본 캐릭터 (탐험/전투 공통)
-└── BattleGrid        # 그리드 시스템
+└── TacticGrid        # 그리드 시스템
 ```
 
 ### 화면 전환 흐름

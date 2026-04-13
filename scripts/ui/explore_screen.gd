@@ -50,6 +50,7 @@ func setup(rna: Dictionary) -> void:
 	_connect_interactables()
 	_spawn_player()
 	_spawn_npcs()
+	_spawn_treasures()
 	_create_battle_triggers()
 	_create_ui()
 	
@@ -172,12 +173,21 @@ func _on_interactable_interacted(interactable: Interactable) -> void:
 	print("Interactable 상호작용: ", interactable.name)
 	
 	match interactable.interact_type:
-		"treasure", "investigate":
-			# 아이템 획득
+		"treasure":
+			# 보물 상자 열기
+			var treasure_path: String = interactable.interact_data.get("treasure_path", "")
+			if treasure_path != "":
+				var treasure := get_node_or_null(treasure_path) as Treasure
+				if treasure:
+					_open_treasure(treasure)
+					# Interactable 제거
+					interactable.queue_free()
+		"investigate":
+			# 조사 포인트
 			var item_id: String = interactable.interact_data.get("item_id", "")
 			if item_id != "":
 				print("  → 아이템 획득: ", item_id)
-				# TODO: 인벤토리에 아이템 추가
+				GameManager.add_item_to_inventory(item_id)
 		"npc":
 			# NPC 대화
 			var npc_id: String = interactable.interact_data.get("npc_id", "")
@@ -307,6 +317,59 @@ func _create_npc_interactable(npc: Actor) -> void:
 	
 	add_child(interactable)
 	print("NPC Interactable 생성: ", interactable.name, " at ", interactable.position)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Treasure Spawning
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _spawn_treasures() -> void:
+	if _map_node == null:
+		return
+	
+	# Treasure 컨테이너 찾기
+	var treasure_container := _map_node.find_child("Treasure", false, false)
+	if treasure_container == null:
+		return
+	
+	# 자식 Treasure 노드들 처리
+	for child in treasure_container.get_children():
+		if child is Treasure:
+			var treasure := child as Treasure
+			# 이미 열린 보물 상자는 Interactable 생성하지 않음
+			if not treasure.is_opened():
+				_create_treasure_interactable(treasure)
+				print("Treasure 발견: ", treasure.name, " item: ", treasure.get_item_id())
+
+
+func _create_treasure_interactable(treasure: Treasure) -> void:
+	# Interactable 씬 인스턴스 생성
+	var interactable := INTERACTABLE_SCENE.instantiate() as Interactable
+	interactable.name = treasure.name + "_Interactable"
+	interactable.interact_type = "treasure"
+	interactable.interact_data = {
+		"item_id": treasure.get_item_id(),
+		"treasure_id": treasure.get_treasure_id(),
+		"treasure_path": treasure.get_path()  # Treasure 노드 참조용
+	}
+	interactable.position = treasure.position
+	
+	# 시그널 연결
+	interactable.interacted.connect(_on_interactable_interacted)
+	
+	add_child(interactable)
+	print("Treasure Interactable 생성: ", interactable.name, " at ", interactable.position)
+
+
+func _open_treasure(treasure: Treasure) -> void:
+	# 아이템 획득
+	var item_id := treasure.get_item_id()
+	if item_id != "":
+		GameManager.add_item_to_inventory(item_id)
+		print("아이템 획득: ", item_id)
+	
+	# 보물 상자 열림 상태로 변경
+	treasure.set_opened(true)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

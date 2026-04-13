@@ -18,6 +18,20 @@ const GRID_SIZE := 64
 ## 그리드당 타일 수
 const TILES_PER_GRID := GRID_SIZE / TILE_SIZE  # 2
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Grid Coordinate Conversion
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## 그리드 좌표를 픽셀 좌표로 변환 (셀 중심 반환)
+func grid_to_pixel(grid_pos: Vector2i) -> Vector2:
+	return Vector2(grid_pos.x * GRID_SIZE, grid_pos.y * GRID_SIZE)
+
+
+## 픽셀 좌표를 그리드 좌표로 변환
+func pixel_to_grid(pixel_pos: Vector2) -> Vector2i:
+	return Vector2i(int(pixel_pos.x / GRID_SIZE), int(pixel_pos.y / GRID_SIZE))
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Enums
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -28,8 +42,6 @@ enum GameState {
 	LOADING,           ## 리소스 로딩
 	MAIN_MENU,         ## 메인 메뉴
 	SHOP,              ## 상점
-	MATCHING,          ## 매칭 중
-	CHARACTER_SELECT,  ## 캐릭터 선택
 	PLAYING,           ## 게임 진행 중
 	PAUSED,            ## 일시정지
 	RESULT             ## 결과 화면
@@ -501,35 +513,6 @@ func get_current_state() -> GameState:
 
 func get_previous_state() -> GameState:
 	return previous_state
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Match Management
-# ═══════════════════════════════════════════════════════════════════════════════
-
-func start_match(mode: MatchMode, map_id: String) -> bool:
-	if current_state != GameState.CHARACTER_SELECT:
-		return false
-	
-	current_match = MatchData.new()
-	current_match.mode = mode
-	current_match.map_id = map_id
-	
-	change_state(GameState.PLAYING)
-	match_started.emit(current_match)
-	return true
-
-
-func end_match(result: MatchResult) -> void:
-	if current_state != GameState.PLAYING:
-		return
-	
-	change_state(GameState.RESULT)
-	match_ended.emit(result)
-
-
-func cancel_match() -> void:
-	current_match = null
-	change_state(GameState.MAIN_MENU)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Player Management

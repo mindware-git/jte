@@ -1,99 +1,99 @@
-keys,ko,en,ja,zh
-CHAPTER_ACT1_TITLE,"1막 프롤로그: 운명의 만남","Act 1 Prologue: Fateful Meeting","第1幕 プロローグ: 運命の出会い","第1幕 序章: 命运的相遇"
-SPEAKER_NARRATION,나레이션,Narration,ナレーション,旁白
-SPEAKER_SANZANG,삼장,Tang Sanzang,三蔵,三藏
-SPEAKER_WUKONG,손오공,Sun Wukong,孫悟空,孙悟空
-SPEAKER_OLD_MONK,노승,Old Monk,老僧,老僧
-SPEAKER_UNKNOWN,???,???,???,???
-ACT1_PROLOGUE_001,"당나라 변경, 고요한 사원.","Tang Dynasty border, a quiet temple.","唐の国境、静かな寺。","唐朝边境，安静的寺院。"
-ACT1_PROLOGUE_002,"젊은 승려 삼장은 오래된 전승 하나를 접한다.","Young monk Sanzang encounters an ancient legend.","若い僧侶・三蔵は古い伝承に出会う。","年轻僧侣三藏接触到一个古老的传说。"
-ACT1_PROLOGUE_003,"동해 너머 봉래산에서 이상 징조가 일어나고 있다.","Strange omens arise from Mount Bonglae beyond the Eastern Sea.","東海の向こう、蓬莱山で異変が起きている。","东海彼岸的蓬莱山出现了异象。"
-ACT1_PROLOGUE_004,"옛 길은 무너졌고, 그 길을 다시 열 수 있는 자는...","The old path has crumbled, and only one who can reopen it...","古の道は崩れ、再び開くことができるのは...","古道已毁，能重新开辟这条道路的人..."
-ACT1_PROLOGUE_005,"오행봉에 봉인된 돌원숭이뿐이라 하더라.","Is the Stone Monkey sealed at Five Elements Peak.","五行山に封印された石猿だけだという。","据说只有五行山封印的石猴才能做到。"
-ACT1_PROLOGUE_006,"돌원숭이... 손오공인가요?","The Stone Monkey... Sun Wukong?","石猿... 孫悟空ですか？","石猴...孙悟空吗？"
-ACT1_PROLOGUE_007,"삼장은 동쪽으로 향하는 길을 떠난다.","Sanzang departs on a journey eastward.","三蔵は東への旅路につく。","三藏踏上了向东的旅程。"
-ACT1_PROLOGUE_008,"산과 폐허, 요괴의 습격을 지나...","Through mountains and ruins, past yokai attacks...","山と廃墟、妖怪の襲撃を越え...","穿越山川废墟，经受妖怪袭击..."
-ACT1_PROLOGUE_009,"마침내 오행봉에 도착한다.","Finally arriving at Five Elements Peak.","ついに五行山に到着する。","终于到达五行山。"
-ACT1_PROLOGUE_010,"거대한 바위 아래, 황금빛 봉인이 희미하게 빛나고 있다.","Beneath a massive boulder, a golden seal glows faintly.","巨大な岩の下で、黄金の封印がかすかに光っている。","巨岩之下，金色封印隐隐发光。"
-ACT1_PROLOGUE_011,"이것이... 그 전설의...","This is... the legendary...","これが... 伝説の...","这就是...传说中的..."
-ACT1_PROLOGUE_012,"삼장이 봉인에 손을 댄 순간,","The moment Sanzang touches the seal,","三蔵が封印に手を触れた瞬間、","三藏触碰封印的瞬间，"
-ACT1_PROLOGUE_013,"천지가 진동하고 바위가 갈라진다.","Heaven and earth tremble, and the boulder splits.","天地が揺れ、岩が裂ける。","天地震动，岩石裂开。"
-ACT1_PROLOGUE_014,"...누가, 나를 깨웠나.","...Who awakened me.","...誰が、私を覚醒させた。","...是谁，唤醒了我。"
-ACT1_PROLOGUE_015,"먼지 속에서 한 존재가 일어난다.","From the dust, a being rises.","塵の中から一人の存在が立ち上がる。","尘埃中，一个身影站了起来。"
-ACT1_PROLOGUE_016,"네 녀석인가. 봉인을 푼 게.","So it was you. The one who broke the seal.","お前か。封印を解いたのは。","是你啊。解开封印的人。"
-ACT1_PROLOGUE_017,"당신이... 손오공?","You are... Sun Wukong?","あなたが... 孫悟空？","你就是...孙悟空？"
-ACT1_PROLOGUE_018,"흐음... 제법이군.","Hmm... Not bad.","ふむ... 悪くない。","嗯...还不错。"
-ACT1_PROLOGUE_019,"이왕 풀어놨으니, 책임은 져야지.","Since you've freed me, you must take responsibility.","せっかく解放したんだ、責任は取ってもらうぞ。","既然把我放出来了，你要负责。"
-ACT1_PROLOGUE_020,"이렇게 삼장과 손오공의 여정이 시작된다.","Thus begins the journey of Sanzang and Sun Wukong.","こうして三蔵と孫悟空の旅が始まる。","就这样，三藏和孙悟空的旅程开始了。"
-UI_TOUCH_HINT,"터치하여 빠르게 진행","Touch to speed up","タッチで早く進む","触摸以加速"
-UI_TOUCH_START,"터치하여 시작하기","Touch to start","タッチで始める","触摸开始"
-LOC_BLUEWOOD_VILLAGE,청목진,Bluewood Village,青木鎮,青木镇
-LOC_BLUEWOOD_VILLAGE_DESC,"작은 마을이 조용히 서 있다. 밤마다 이상한 소문이 돈다.","A small village sits quietly. Strange rumors circulate every night.","小さな村が静かに佇んでいる。夜な夜な奇妙な噂が流れる。","小村庄静静地坐落着。每晚都有奇怪的传闻流传。"
-LOC_ELEMENTAL_SLOPE,오행산 중턱,Elemental Peak Slope,五行山 中腹,五行山山腰
-LOC_ELEMENTAL_SLOPE_DESC,"산길이 험해진다. 바위귀신이 길을 막고 있다.","The mountain path becomes steep. A rock spirit blocks the way.","山道が険しくなる。岩鬼が道を塞いでいる。","山路变得陡峭。岩鬼挡住了去路。"
-LOC_CHEONGMOK,청목진,Cheongmok Village,青木鎮,青木镇
-LOC_CHEONGMOK_DESC,"작은 마을이 조용히 서 있다.","A small village sits quietly.","小さな村が静かに佇んでいる。","小村庄静静地坐落着。"
-LOC_MOUNTAIN_ENTRANCE,산길입구,Mountain Entrance,山道入口,山道入口
-LOC_MOUNTAIN_ENTRANCE_DESC,"마을에서 이어지는 산길의 시작.","The start of the mountain path from the village.","村から続く山道の始まり。","从村庄延伸而来的山路起点。"
-LOC_MOUNTAIN_MID,산길중턱,Mountain Midway,山道中腹,山腰
-LOC_MOUNTAIN_MID_DESC,"산 중턱에 작은 제단이 보인다.","A small shrine is visible halfway up the mountain.","山の中腹に小さな祭壇が見える。","半山腰可见一座小祭坛。"
-LOC_SHRINE,오행제단,Five Elements Shrine,五行祭壇,五行祭坛
-LOC_SHRINE_DESC,"오색 매화가 심긴 오래된 제단.","An ancient shrine with five-colored plum blossoms.","五色の梅が植えられた古い祭壇。","种有五色梅花的古老祭坛。"
-LOC_SEAL_STONE,봉인석,Seal Stone,封印石,封印石
-LOC_SEAL_STONE_DESC,"거대한 바위 아래 황금빛 봉인이 빛난다.","A golden seal glows beneath a massive boulder.","巨大な岩の下で黄金の封印が光る。","巨岩下金色封印闪闪发光。"
-LOC_FOREST_ENTRANCE,연등숲입구,Lantern Forest Entrance,灯籠の森入口,灯笼森林入口
-LOC_FOREST_ENTRANCE_DESC,"화령들이 춤추는 숲의 입구.","The entrance to a forest where fire spirits dance.","火の精が踊る森の入口。","火灵起舞的森林入口。"
-LOC_FOREST_DEEP,연등숲심부,Lantern Forest Depths,灯籠の森深部,灯笼森林深处
-LOC_FOREST_DEEP_DESC,"등롱이 희미하게 빛나는 숲의 깊은 곳.","Deep in the forest where lanterns glow faintly.","灯籠がかすかに光る森の奥深く。","灯笼微弱发光的森林深处。"
-INTERACT_TAVERN,주점,Tavern,酒場,酒馆
-INTERACT_GENERAL_STORE,잡화상,General Store,雑貨屋,杂货店
-INTERACT_WELL,우물,Well,井戸,水井
-INTERACT_ROCK_SPIRIT,바위귀신,Rock Spirit,岩鬼,岩鬼
-INTERACT_DEAD_TREE,죽은 나무,Dead Tree,枯れ木,枯木
-INTERACT_CLEARED_PATH,뚫린 길,Cleared Path,開かれた道,开通的道路
-INTERACT_HIDDEN_PATH,숨은 길,Hidden Path,隠された道,隐藏的道路
-INTERACT_BATTLE_ROCK_SPIRIT,바위귀신과 전투,Battle Rock Spirit,岩鬼と戦う,与岩鬼战斗
-ENEMY_ROCK_DEMON,바위귀신,Rock Demon,岩鬼,岩鬼
-INTERACT_ROCK_DEMON,바위귀신,Rock Demon,岩鬼,岩鬼
-INTERACT_SHRINE,오색제단,Five Colors Altar,五色祭壇,五色祭坛
-INTERACT_SEAL,봉인,Seal,封印,封印
-INTERACT_FIRE_SPIRIT,화령,Fire Spirit,火の精,火灵
-INTERACT_LANTERN_PUZZLE,등롱 퍼즐,Lantern Puzzle,灯籠パズル,灯笼谜题
-LOC_DONGLIM_TEMPLE,동림사,Donglim Temple,東林寺,东林寺
-LOC_DONGLIM_TEMPLE_DESC,"화령 소동 후 들른 큰 절","A large temple visited after the fire spirit incident","火の精の騒動の後に立ち寄った大きな寺","火灵骚动后造访的大寺院"
-LOC_MYEONGJU_CITY,명주성,Myeongju City,明州城,明州城
-LOC_MYEONGJU_CITY_DESC,"해상 교역으로 번성한 항구 도시","A prosperous port city thriving on maritime trade","海上貿易で栄える港町","海上贸易繁荣的港口城市"
-LOC_THEATER_BACKSTAGE,연희장 뒤편,Theater Backstage,芝居小屋の裏手,戏院后台
-LOC_THEATER_BACKSTAGE_DESC,"가면 창고와 지하 도박굴로 이어진다.","Connected to the mask storage and underground gambling den.","仮面倉庫と地下の賭博場に続いている。","通往面具仓库和地下赌场。"
-LOC_OBONG_HARBOR,오밍항,Obong Harbor,舞鳳港,舞凤港
-LOC_OBONG_HARBOR_DESC,"동쪽 바닷길로 나가는 항구","A port leading to the eastern sea route","東の海路へ出る港","通往东方海路的港口"
-NPC_BLUFFING_ELDER,허풍 노인,Braggart Old Man,虚風老人,虚风老人
-DIALOGUE_BLUFFING_ELDER_FIRST,첫 만남,First Meeting,初めての出会い,初次见面
-DIALOGUE_BLUFFING_ELDER_FIRST_TEXT,"흐음... 승려가 이런 데까지 오다니 드문 일이군.\n비싼 약주나 한 잔 사주겠나? 100금만 내면, 산이 열리는 비결을 알려주지.","Hmm... A monk coming all the way here is rare.\nWill you buy me an expensive rice wine? Just 100 gold, and I'll tell you the secret to opening the mountain.","ふむ... 僧侶がこんな所まで来るとは珍しい。\n高い薬酒を一杯おごってくれんか？100金払えば、山が開く秘訣を教えてやる。","嗯...僧侣来到这种地方真是罕见。\n请我喝一杯昂贵的药酒吧？只要100金，我就告诉你开山的秘诀。"
-CHOICE_BUY_WINE,약주를 사준다 (100금),Buy Rice Wine (100 Gold),薬酒を奢る (100金),买药酒 (100金)
-DIALOGUE_BLUFFING_ELDER_BUY_WINE,"오호! 제법이군! 자, 약속한 대로 봉인 구절을 알려주지.\n오행의 문을 열려면... '금목수화토, 다시 근원으로'라.\n이 구절을 봉인석 앞에서 외우면 된다.","Oh ho! Not bad! Now, as promised, I'll tell you the seal phrase.\nTo open the Five Elements gate... 'Metal, Wood, Water, Fire, Earth, return to the origin.'\nRecite this in front of the seal stone.","おお！やるじゃないか！約束通り封印の句を教えてやる。\n五行の門を開くには...『金木水火土、再び根源へ』だ。\nこの句を封印石の前で唱えればいい。","哦吼！不错嘛！按照约定，我告诉你封印口诀。\n要打开五行之门...『金木水火土，回归本源』。\n在封印石前念诵这个口诀就可以了。"
-CHOICE_DECLINE,사양한다,Decline,断る,拒绝
-DIALOGUE_BLUFFING_ELDER_DECLINE,"흥, 심통이 없는 승려군. 가거라, 가거라.","Hmph, a monk with no spirit. Go, go.","ふん、根性のない僧侶だな。行け、行け。","哼，没心计的僧侣。走吧，走吧。"
-DIALOGUE_BLUFFING_ELDER_HINT,힌트 전달,Hint Delivery,ヒントの伝達,提示传达
-DIALOGUE_BLUFFING_ELDER_HINT_TEXT,"약주는 잘 마셨다. 약속한 봉인 구절을 알려주지.\n오행의 문을 열려면... '금목수화토, 다시 근원으로'라.\n이 구절을 봉인석 앞에서 외우면 된다.","The wine was good. I'll tell you the promised seal phrase.\nTo open the Five Elements gate... 'Metal, Wood, Water, Fire, Earth, return to the origin.'\nRecite this in front of the seal stone.","薬酒は美味かった。約束の封印の句を教えてやる。\n五行の門を開くには...『金木水火土、再び根源へ』だ。\nこの句を封印石の前で唱えればいい。","酒不错。我告诉你约定的封印口诀。\n要打开五行之门...『金木水火土，回归本源』。\n在封印石前念诵这个口诀就可以了。"
-CHOICE_LISTEN_HINT,힌트를 듣는다,Listen to Hint,ヒントを聞く,听提示
-DIALOGUE_BLUFFING_ELDER_RECEIVE_HINT,"이제 네 몫이다. 산으로 가 보거라.","Now it's your turn. Go to the mountain.","さあ、お前の番だ。山へ行け。","现在轮到你了。去山上吧。"
-DIALOGUE_BLUFFING_ELDER_REPEAT,반복 대화,Repeat Dialogue,繰り返しの会話,重复对话
-DIALOGUE_BLUFFING_ELDER_REPEAT_TEXT,"이미 다 알려줬지? 산으로 가 보거라.","I already told you everything. Go to the mountain.","もう全部教えたろ？山へ行け。","我都告诉你了。去山上吧。"
-SHOP_GENERAL_STORE,잡화상,General Store,雑貨屋,杂货店
-SHOP_GENERAL_STORE_DESC,"각종 물품을 파는 잡화상입니다.","A general store selling various items.","様々な品物を売る雑貨屋です。","出售各种物品的杂货店。"
-SHOP_BUY,구매,Buy,購入,购买
-SHOP_SELL,판매,Sell,売却,出售
-SHOP_CLOSE,닫기,Close,閉じる,关闭
-SHOP_COIN_INSUFFICIENT,코인 부족,Insufficient Coins,コイン不足,金币不足
-SHOP_BUY_CONFIRM,"%s을(를) %d 코인에 구매하시겠습니까?","Buy %s for %d coins?","%sを%dコインで購入しますか？","是否以%d金币购买%s？"
-SHOP_SELL_CONFIRM,"%s을(를) %d 코인에 판매하시겠습니까?","Sell %s for %d coins?","%sを%dコインで売却しますか？","是否以%d金币出售%s？"
-SHOP_BUY_SUCCESS,구매 완료!,Purchase complete!,購入完了!,购买完成!
-SHOP_SELL_SUCCESS,판매 완료!,Sale complete!,売却完了!,出售完成!
-SHOP_NO_ITEMS,판매할 아이템이 없습니다.,No items to sell.,売るアイテムがありません。,没有可出售的物品。
-SHOP_CANNOT_SELL,이 상점에서는 아이템을 판매할 수 없습니다.,This shop cannot buy items from you.,この店はアイテムを買い取れません。,这家店不能收购物品。
-ITEM_POTION,회복약,Potion,回復薬,回复药
-ITEM_ETHER,에테르,Ether,エーテル,以太
-ITEM_ANTIDOTE,해독제,Antidote,解毒剤,解毒剂
-ITEM_FIRE_BOMB,화염탄,Fire Bomb,爆弾,火焰弹
-ITEM_SMOKE_BALL,연막탄,Smoke Ball,煙玉,烟雾弹
+keys,ko,en
+CHAPTER_ACT1_TITLE,"1막 프롤로그: 운명의 만남","Act 1 Prologue: Fateful Meeting"
+SPEAKER_NARRATION,나레이션,Narration
+SPEAKER_SANZANG,삼장,Tang Sanzang
+SPEAKER_WUKONG,손오공,Sun Wukong
+SPEAKER_OLD_MONK,노승,Old Monk
+SPEAKER_UNKNOWN,???,???
+ACT1_PROLOGUE_001,"당나라 변경, 고요한 사원.","Tang Dynasty border, a quiet temple."
+ACT1_PROLOGUE_002,"젊은 승려 삼장은 오래된 전승 하나를 접한다.","Young monk Sanzang encounters an ancient legend."
+ACT1_PROLOGUE_003,"동해 너머 봉래산에서 이상 징조가 일어나고 있다.","Strange omens arise from Mount Bonglae beyond the Eastern Sea."
+ACT1_PROLOGUE_004,"옛 길은 무너졌고, 그 길을 다시 열 수 있는 자는...","The old path has crumbled, and only one who can reopen it..."
+ACT1_PROLOGUE_005,"오행봉에 봉인된 돌원숭이뿐이라 하더라.","Is the Stone Monkey sealed at Five Elements Peak."
+ACT1_PROLOGUE_006,"돌원숭이... 손오공인가요?","The Stone Monkey... Sun Wukong?"
+ACT1_PROLOGUE_007,"삼장은 동쪽으로 향하는 길을 떠난다.","Sanzang departs on a journey eastward."
+ACT1_PROLOGUE_008,"산과 폐허, 요괴의 습격을 지나...","Through mountains and ruins, past yokai attacks..."
+ACT1_PROLOGUE_009,"마침내 오행봉에 도착한다.","Finally arriving at Five Elements Peak."
+ACT1_PROLOGUE_010,"거대한 바위 아래, 황금빛 봉인이 희미하게 빛나고 있다.","Beneath a massive boulder, a golden seal glows faintly."
+ACT1_PROLOGUE_011,"이것이... 그 전설의...","This is... the legendary..."
+ACT1_PROLOGUE_012,"삼장이 봉인에 손을 댄 순간,","The moment Sanzang touches the seal,"
+ACT1_PROLOGUE_013,"천지가 진동하고 바위가 갈라진다.","Heaven and earth tremble, and the boulder splits."
+ACT1_PROLOGUE_014,"...누가, 나를 깨웠나.","...Who awakened me."
+ACT1_PROLOGUE_015,"먼지 속에서 한 존재가 일어난다.","From the dust, a being rises."
+ACT1_PROLOGUE_016,"네 녀석인가. 봉인을 푼 게.","So it was you. The one who broke the seal."
+ACT1_PROLOGUE_017,"당신이... 손오공?","You are... Sun Wukong?"
+ACT1_PROLOGUE_018,"흐음... 제법이군.","Hmm... Not bad."
+ACT1_PROLOGUE_019,"이왕 풀어놨으니, 책임은 져야지.","Since you've freed me, you must take responsibility."
+ACT1_PROLOGUE_020,"이렇게 삼장과 손오공의 여정이 시작된다.","Thus begins the journey of Sanzang and Sun Wukong."
+UI_TOUCH_HINT,"터치하여 빠르게 진행","Touch to speed up"
+UI_TOUCH_START,"터치하여 시작하기","Touch to start"
+LOC_BLUEWOOD_VILLAGE,청목진,Bluewood Village
+LOC_BLUEWOOD_VILLAGE_DESC,"작은 마을이 조용히 서 있다. 밤마다 이상한 소문이 돈다.","A small village sits quietly. Strange rumors circulate every night."
+LOC_ELEMENTAL_SLOPE,오행산 중턱,Elemental Peak Slope
+LOC_ELEMENTAL_SLOPE_DESC,"산길이 험해진다. 바위귀신이 길을 막고 있다.","The mountain path becomes steep. A rock spirit blocks the way."
+LOC_CHEONGMOK,청목진,Cheongmok Village
+LOC_CHEONGMOK_DESC,"작은 마을이 조용히 서 있다.","A small village sits quietly."
+LOC_MOUNTAIN_ENTRANCE,산길입구,Mountain Entrance
+LOC_MOUNTAIN_ENTRANCE_DESC,"마을에서 이어지는 산길의 시작.","The start of the mountain path from the village."
+LOC_MOUNTAIN_MID,산길중턱,Mountain Midway
+LOC_MOUNTAIN_MID_DESC,"산 중턱에 작은 제단이 보인다.","A small shrine is visible halfway up the mountain."
+LOC_SHRINE,오행제단,Five Elements Shrine
+LOC_SHRINE_DESC,"오색 매화가 심긴 오래된 제단.","An ancient shrine with five-colored plum blossoms."
+LOC_SEAL_STONE,봉인석,Seal Stone
+LOC_SEAL_STONE_DESC,"거대한 바위 아래 황금빛 봉인이 빛난다.","A golden seal glows beneath a massive boulder."
+LOC_FOREST_ENTRANCE,연등숲입구,Lantern Forest Entrance
+LOC_FOREST_ENTRANCE_DESC,"화령들이 춤추는 숲의 입구.","The entrance to a forest where fire spirits dance."
+LOC_FOREST_DEEP,연등숲심부,Lantern Forest Depths
+LOC_FOREST_DEEP_DESC,"등롱이 희미하게 빛나는 숲의 깊은 곳.","Deep in the forest where lanterns glow faintly."
+INTERACT_TAVERN,주점,Tavern
+INTERACT_GENERAL_STORE,잡화상,General Store
+INTERACT_WELL,우물,Well
+INTERACT_ROCK_SPIRIT,바위귀신,Rock Spirit
+INTERACT_DEAD_TREE,죽은 나무,Dead Tree
+INTERACT_CLEARED_PATH,뚫린 길,Cleared Path
+INTERACT_HIDDEN_PATH,숨은 길,Hidden Path
+INTERACT_BATTLE_ROCK_SPIRIT,바위귀신과 전투,Battle Rock Spirit
+ENEMY_ROCK_DEMON,바위귀신,Rock Demon
+INTERACT_ROCK_DEMON,바위귀신,Rock Demon
+INTERACT_SHRINE,오색제단,Five Colors Altar
+INTERACT_SEAL,봉인,Seal
+INTERACT_FIRE_SPIRIT,화령,Fire Spirit
+INTERACT_LANTERN_PUZZLE,등롱 퍼즐,Lantern Puzzle
+LOC_DONGLIM_TEMPLE,동림사,Donglim Temple
+LOC_DONGLIM_TEMPLE_DESC,"화령 소동 후 들른 큰 절","A large temple visited after the fire spirit incident"
+LOC_MYEONGJU_CITY,명주성,Myeongju City
+LOC_MYEONGJU_CITY_DESC,"해상 교역으로 번성한 항구 도시","A prosperous port city thriving on maritime trade"
+LOC_THEATER_BACKSTAGE,연희장 뒤편,Theater Backstage
+LOC_THEATER_BACKSTAGE_DESC,"가면 창고와 지하 도박굴로 이어진다.","Connected to the mask storage and underground gambling den."
+LOC_OBONG_HARBOR,오밍항,Obong Harbor
+LOC_OBONG_HARBOR_DESC,"동쪽 바닷길로 나가는 항구","A port leading to the eastern sea route"
+NPC_BLUFFING_ELDER,허풍 노인,Braggart Old Man
+DIALOGUE_BLUFFING_ELDER_FIRST,첫 만남,First Meeting
+DIALOGUE_BLUFFING_ELDER_FIRST_TEXT,"흐음... 승려가 이런 데까지 오다니 드문 일이군.\n비싼 약주나 한 잔 사주겠나? 100금만 내면, 산이 열리는 비결을 알려주지.","Hmm... A monk coming all the way here is rare.\nWill you buy me an expensive rice wine? Just 100 gold, and I'll tell you the secret to opening the mountain."
+CHOICE_BUY_WINE,약주를 사준다 (100금),Buy Rice Wine (100 Gold)
+DIALOGUE_BLUFFING_ELDER_BUY_WINE,"오호! 제법이군! 자, 약속한 대로 봉인 구절을 알려주지.\n오행의 문을 열려면... '금목수화토, 다시 근원으로'라.\n이 구절을 봉인석 앞에서 외우면 된다.","Oh ho! Not bad! Now, as promised, I'll tell you the seal phrase.\nTo open the Five Elements gate... 'Metal, Wood, Water, Fire, Earth, return to the origin.'\nRecite this in front of the seal stone."
+CHOICE_DECLINE,사양한다,Decline
+DIALOGUE_BLUFFING_ELDER_DECLINE,"흥, 심통이 없는 승려군. 가거라, 가거라.","Hmph, a monk with no spirit. Go, go."
+DIALOGUE_BLUFFING_ELDER_HINT,힌트 전달,Hint Delivery
+DIALOGUE_BLUFFING_ELDER_HINT_TEXT,"약주는 잘 마셨다. 약속한 봉인 구절을 알려주지.\n오행의 문을 열려면... '금목수화토, 다시 근원으로'라.\n이 구절을 봉인석 앞에서 외우면 된다.","The wine was good. I'll tell you the promised seal phrase.\nTo open the Five Elements gate... 'Metal, Wood, Water, Fire, Earth, return to the origin.'\nRecite this in front of the seal stone."
+CHOICE_LISTEN_HINT,힌트를 듣는다,Listen to Hint
+DIALOGUE_BLUFFING_ELDER_RECEIVE_HINT,"이제 네 몫이다. 산으로 가 보거라.","Now it's your turn. Go to the mountain."
+DIALOGUE_BLUFFING_ELDER_REPEAT,반복 대화,Repeat Dialogue
+DIALOGUE_BLUFFING_ELDER_REPEAT_TEXT,"이미 다 알려줬지? 산으로 가 보거라.","I already told you everything. Go to the mountain."
+SHOP_GENERAL_STORE,잡화상,General Store
+SHOP_GENERAL_STORE_DESC,"각종 물품을 파는 잡화상입니다.","A general store selling various items."
+SHOP_BUY,구매,Buy
+SHOP_SELL,판매,Sell
+SHOP_CLOSE,닫기,Close
+SHOP_COIN_INSUFFICIENT,코인 부족,Insufficient Coins
+SHOP_BUY_CONFIRM,"%s을(를) %d 코인에 구매하시겠습니까?","Buy %s for %d coins?"
+SHOP_SELL_CONFIRM,"%s을(를) %d 코인에 판매하시겠습니까?","Sell %s for %d coins?"
+SHOP_BUY_SUCCESS,구매 완료!,Purchase complete!
+SHOP_SELL_SUCCESS,판매 완료!,Sale complete!
+SHOP_NO_ITEMS,판매할 아이템이 없습니다.,No items to sell.
+SHOP_CANNOT_SELL,이 상점에서는 아이템을 판매할 수 없습니다.,This shop cannot buy items from you.
+ITEM_POTION,회복약,Potion
+ITEM_ETHER,에테르,Ether
+ITEM_ANTIDOTE,해독제,Antidote
+ITEM_FIRE_BOMB,화염탄,Fire Bomb
+ITEM_SMOKE_BALL,연막탄,Smoke Ball

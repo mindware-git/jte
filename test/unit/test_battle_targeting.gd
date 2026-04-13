@@ -72,11 +72,11 @@ func test_smoke_ball_targets_self() -> void:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# BattleGrid 색상 테스트
+# TacticGrid 색상 테스트
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func test_battle_grid_show_range_cells_with_color() -> void:
-	var grid := BattleGrid.new()
+	var grid := TacticGrid.new()
 	add_child_autofree(grid)
 	await get_tree().process_frame
 
@@ -101,10 +101,10 @@ func test_battle_grid_show_range_cells_with_color() -> void:
 func test_skill_data_mp_cost_exists() -> void:
 	var SkillRegistryScript := preload("res://scripts/res/registry/skill_registry.gd")
 	var registry := SkillRegistryScript.new()
-	var skill := registry.get_skill("flame_slash")
+	var skill := registry.get_skill("low_heal")
 
-	assert_not_null(skill, "Flame Slash 스킬이 있어야 한다")
-	assert_gt(skill.mp_cost, 0, "Flame Slash의 MP 비용이 0보다 커야 한다")
+	assert_not_null(skill, "로우 힐 스킬이 있어야 한다")
+	assert_gt(skill.mp_cost, 0, "로우 힐의 MP 비용이 0보다 커야 한다")
 
 
 func test_unit_mp_preserved_before_confirm() -> void:
@@ -115,7 +115,7 @@ func test_unit_mp_preserved_before_confirm() -> void:
 
 	var SkillRegistryScript := preload("res://scripts/res/registry/skill_registry.gd")
 	var registry := SkillRegistryScript.new()
-	var skill := registry.get_skill("flame_slash")
+	var skill := registry.get_skill("low_heal")
 
 	# 스킬을 선택만 하고 아직 사용하지 않은 상태 시뮬레이션
 	var mp_before := unit.mp

@@ -90,10 +90,12 @@ func decide_action(
 func _get_targets_in_range(enemy: BattleData.Unit, battle_data: BattleData) -> Array[BattleData.Unit]:
 	var targets: Array[BattleData.Unit] = []
 	
-	# 적의 공격 범위 계산
+	# 적의 공격 범위 계산 (맨해튼 거리 기반)
 	var attackable_positions: Array[Vector2i] = []
-	for offset in enemy.attack_range:
-		attackable_positions.append(enemy.grid_pos + offset)
+	for x in range(-enemy.attack_cast_range, enemy.attack_cast_range + 1):
+		for y in range(-enemy.attack_cast_range, enemy.attack_cast_range + 1):
+			if absi(x) + absi(y) <= enemy.attack_cast_range:
+				attackable_positions.append(enemy.grid_pos + Vector2i(x, y))
 	
 	# 범위 내 아군 확인
 	for ally in battle_data.allies:
@@ -203,7 +205,7 @@ func _get_approach_position(enemy: BattleData.Unit, battle_data: BattleData) -> 
 	
 	var new_pos := enemy.grid_pos + move_dir
 	
-	# 그리드 범위 체크 (BattleGrid.GRID_WIDTH, GRID_HEIGHT 참고)
+	# 그리드 범위 체크 (TacticGrid.GRID_WIDTH, GRID_HEIGHT 참고)
 	if new_pos.x >= 0 and new_pos.x < 16 and new_pos.y >= 0 and new_pos.y < 9:
 		return new_pos
 	

@@ -344,6 +344,29 @@ func move_to_target(target_grid: Vector2i, force: bool = false) -> void:
 	_start_next_leg()
 
 
+## 외부에서 받은 경로로 이동 (A* 등)
+## path: [시작위치, ..., 도착위치] 형태의 경로
+func move_along_path(path: Array[Vector2i]) -> void:
+	if path.is_empty() or path.size() < 2:  # 최소 시작+도착
+		return
+	
+	if _state == State.TALKING:
+		return
+	
+	# 기존 경로 취소
+	_path.clear()
+	_current_waypoint = 0
+	
+	# 첫 번째는 현재 위치이므로 스킵
+	for i in range(1, path.size()):
+		_path.append(path[i])
+	
+	_final_target = path[-1]
+	
+	print("외부 경로 이동 시작: ", _current_tile, " → ", _final_target, " 경로: ", _path)
+	_start_next_leg()
+
+
 ## 경로 계산 (X축 우선, 직선)
 func _calculate_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	var path: Array[Vector2i] = []

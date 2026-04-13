@@ -165,7 +165,7 @@ ui.settings.save
 
 - **변수**: `bluewood` 스타일 (예: `bluewood_account`)
 - **캐릭터 이름**: 그대로 사용 (예: `samzang`, `songoku`)
-- **클래스**: PascalCase (예: `BattleGrid`)
+- **클래스**: PascalCase (예: `TacticGrid`)
 - **함수**: snake_case (예: `get_skill()`)
 
 ## 기술 부채
