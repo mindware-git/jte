@@ -1080,7 +1080,7 @@ func _render_units() -> void:
 
 ## 그리드 좌표를 픽셀 좌표로 변환
 func _grid_to_pixel(grid_pos: Vector2i) -> Vector2:
-	return Vector2(grid_pos.x * 64, grid_pos.y * 64)
+	return GameManager.grid_to_pixel(grid_pos)
 
 
 func _create_battle_character(unit: BattleData.Unit) -> Actor:

@@ -25,7 +25,7 @@ const TILES_PER_GRID := GRID_SIZE / TILE_SIZE  # 2
 
 ## 그리드 좌표를 픽셀 좌표로 변환 (셀 중심 반환)
 func grid_to_pixel(grid_pos: Vector2i) -> Vector2:
-	return Vector2(grid_pos.x * GRID_SIZE, grid_pos.y * GRID_SIZE)
+	return Vector2(grid_pos.x * GRID_SIZE + GRID_SIZE / 2, grid_pos.y * GRID_SIZE + GRID_SIZE / 2)
 
 
 ## 픽셀 좌표를 그리드 좌표로 변환
