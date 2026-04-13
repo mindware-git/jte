@@ -125,6 +125,9 @@ var _click_area: Area2D = null
 ## 이름표
 var _name_label: Label = null
 
+## 이동 Tween
+var _move_tween: Tween = null
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Battle Data (전투 시에만 사용)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -180,10 +183,6 @@ var is_dead: bool:
 func _ready() -> void:
 	_setup_click_area()
 	_setup_name_label()
-
-func _physics_process(delta: float) -> void:
-	if _is_moving:
-		_process_movement(delta)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -385,7 +384,7 @@ func _calculate_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	return path
 
 
-## 다음 GRID로 이동 시작
+## 다음 GRID로 이동 시작 (Tween 기반)
 func _start_next_leg() -> void:
 	if _current_waypoint >= _path.size():
 		return
@@ -399,43 +398,37 @@ func _start_next_leg() -> void:
 	# 이동 방향 설정
 	var move_vec := Vector2(next_grid.x - _current_tile.x, next_grid.y - _current_tile.y)
 	set_direction_from_vector(move_vec)
-	
 	_update_animation()
+	
+	# 한 칸 이동 duration 계산
+	var duration := GRID_SIZE / _move_speed
+	
+	# 기존 Tween 중단 후 새로 생성
+	if _move_tween:
+		_move_tween.kill()
+	_move_tween = create_tween()
+	_move_tween.tween_property(self, "position", _target_position, duration)
+	_move_tween.finished.connect(_on_leg_finished)
 
 
-## 이동 처리 (move_and_slide 방식)
-func _process_movement(_delta: float) -> void:
-	# 목표 위치로 이동 방향 계산
-	var direction := (_target_position - position).normalized()
+## Tween 한 칸 완료 콜백
+func _on_leg_finished() -> void:
+	position = _target_position  # 정확히 스냅
+	_current_tile = _target_tile
+	_current_waypoint += 1
 	
-	# velocity 설정 후 이동
-	velocity = direction * _move_speed
-	move_and_slide()
-	
-	# 현재 위치가 어느 GRID에 있는지 확인
-	var actual_grid := _world_to_tile(position)
-	
-	# 디버그 print
-	# print("[", display_name, "] pos: ", position, " actual_grid: ", actual_grid, " target: ", _target_tile, " waypoint: ", _current_waypoint)
-	
-	# 목표 GRID에 도착했는지 확인
-	if actual_grid == _target_tile:
-		_current_tile = actual_grid
-		_current_waypoint += 1
-		
-		if _current_waypoint < _path.size():
-			# 다음 GRID로
-			print("GRID 도착: ", _current_tile, " → 다음: ", _path[_current_waypoint])
-			_start_next_leg()
-		else:
-			# 최종 도착
-			_is_moving = false
-			_state = State.IDLE
-			_path.clear()
-			_current_waypoint = 0
-			_update_animation()
-			print("이동 완료: ", _current_tile)
-			movement_finished.emit()
+	if _current_waypoint < _path.size():
+		# 다음 GRID로
+		_start_next_leg()
+	else:
+		# 최종 도착
+		_is_moving = false
+		_state = State.IDLE
+		_path.clear()
+		_current_waypoint = 0
+		_move_tween = null
+		_update_animation()
+		movement_finished.emit()
 
 
 ## 타일 좌표 → 월드 좌표 (그리드 기반)
