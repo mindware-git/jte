@@ -15,6 +15,7 @@ func _init() -> void:
 
 func _register_all_skills() -> void:
 	_register_basic_skills()
+	_register_wukong_skills()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -159,6 +160,49 @@ func get_all_skills() -> Array[SkillData]:
 	return result
 
 
+func _register_wukong_skills() -> void:
+	# ═══════════════════════════════════════════════════════════════════════════════
+	# 손오공 스킬 (SP 캐릭터)
+	# ═══════════════════════════════════════════════════════════════════════════════
+	
+	# 여의봉 치기 - 기본 공격
+	var ruyi_staff := SkillData.new()
+	ruyi_staff.id = "ruyi_staff"
+	ruyi_staff.name = "여의봉 치기"
+	ruyi_staff.type = SkillData.SkillType.ATTACK
+	ruyi_staff.sg_cost = 5
+	ruyi_staff.damage_multiplier = 1.5
+	ruyi_staff.cast_range = 1
+	ruyi_staff.area_pattern = SkillData.AreaPattern.SINGLE
+	ruyi_staff.unlock_level = 1
+	_register_skill(ruyi_staff)
+	
+	# 근두운 - 순간이동
+	var cloud_somersault := SkillData.new()
+	cloud_somersault.id = "cloud_somersault"
+	cloud_somersault.name = "근두운"
+	cloud_somersault.type = SkillData.SkillType.BUFF
+	cloud_somersault.sg_cost = 10
+	cloud_somersault.buff_type = "teleport"
+	cloud_somersault.cast_range = 5
+	cloud_somersault.area_pattern = SkillData.AreaPattern.SINGLE
+	cloud_somersault.unlock_level = 1
+	_register_skill(cloud_somersault)
+	
+	# 분신술 - 공격력 증가
+	var clone_technique := SkillData.new()
+	clone_technique.id = "clone_technique"
+	clone_technique.name = "분신술"
+	clone_technique.type = SkillData.SkillType.BUFF
+	clone_technique.sg_cost = 15
+	clone_technique.buff_type = "attack_up"
+	clone_technique.buff_duration = 3
+	clone_technique.cast_range = 0
+	clone_technique.area_pattern = SkillData.AreaPattern.SINGLE
+	clone_technique.unlock_level = 1
+	_register_skill(clone_technique)
+
+
 func get_skills_for_character(character_id: String) -> Array[SkillData]:
 	# 캐릭터별 스킬 매핑
 	var mapping := {
@@ -168,17 +212,21 @@ func get_skills_for_character(character_id: String) -> Array[SkillData]:
 			"hyper_heal", "refresh"
 		],
 		"wukong": [
-			"stone_monkey_strike", "azure_dragon_blow", "white_tiger_flip",
-			"phantom_grin", "mirror_image", "vermillion_rampage",
-			"black_tortoise_crush", "moonlight_barrage",
-			"ruyi_rampage", "golden_afterimage"
+			"ruyi_staff", "cloud_somersault", "clone_technique"
 		],
 	}
 	
+	# 방어 코드: 매핑이 없으면 경고
+	if not mapping.has(character_id):
+		push_warning("[SkillRegistry] 캐릭터 '%s'의 스킬 매핑이 없습니다!" % character_id)
+		return []
+	
 	var result: Array[SkillData] = []
-	if mapping.has(character_id):
-		for skill_id in mapping[character_id]:
-			var skill := get_skill(skill_id)
-			if skill:
-				result.append(skill)
+	for skill_id in mapping[character_id]:
+		var skill := get_skill(skill_id)
+		if skill:
+			result.append(skill)
+		else:
+			push_warning("[SkillRegistry] 스킬 '%s'을(를) 찾을 수 없습니다!" % skill_id)
+	
 	return result

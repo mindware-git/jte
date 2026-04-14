@@ -2,6 +2,12 @@ class_name CharacterData
 extends Resource
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# 에너지 타입
+# ═══════════════════════════════════════════════════════════════════════════════
+
+enum EnergyType { MP, SP }
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # 기본 정보
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -9,6 +15,7 @@ extends Resource
 @export var display_name: String = ""
 @export var description: String = ""
 @export var element: GameManager.ElementType = GameManager.ElementType.EARTH
+@export var energy_type: EnergyType = EnergyType.MP
 # 6417564, 33554473, 268435497, 7766988
 
 # ═══════════════════════════════════════════════════════════════════════════════

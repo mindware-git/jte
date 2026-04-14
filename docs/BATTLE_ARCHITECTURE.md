@@ -25,6 +25,62 @@
 
 ---
 
+## 전투 UI 상태 머신
+
+전투 UI는 명확한 상태 머신으로 정의한다. 모든 상태 전이와 리소스 정리를 명확히 하여 버그를 방지한다.
+
+### 상태 정의
+
+| 상태 | 설명 | 표시되는 UI | 선택 상태 |
+|------|------|------------|----------|
+| `IDLE` | 턴 시작, 캐릭터 대기 | 턴 라벨, 캐릭터 하이라이트 | `state = idle` |
+| `ACTION_MENU` | 행동 선택 | 액션 메뉴 (이동/공격/스킬/아이템/턴종료) | `state = action_menu` |
+| `LIST_MENU` | 아이템/스킬 리스트를 고르는 중 | 스킬(스킬), 아이템() | `state = action_menu` |
+| `CAST` | CAST 상태 | 흰색으로 CAST가능 범위가 보임 | `state = cast` |
+| `EFFECT` | EFFECT 상태 | CAST 선택 후 이동(파랑), 공격(빨강), 힐링(초록) 등으로 보임 | `state = effect` |
+| `ACTION` | ACTION 상태 | 실제로 애니메이션등 뭔가 하고있음 | `state = action` |
+
+아이템, 이동, 스킬의 경우
+CAST, EFFECT, CONFIRM 의 흐름이 있음.
+
+
+### 상태 전이 표
+
+```
+IDLE → ACTION_MENU (캐릭터 클릭)
+ACTION_MENU -> 이동 클릭 -> CAST -> EFFECT -> ACTION -> 종료
+ACTION_MENU -> 아이템 클릭 -> LIST_MENU -> 아이템 선택 -> CAST -> EFFECT -> ACTION -> 종료
+ACTION_MENU -> 턴종료 클릭 -> 종료
+```
+
+각 상태 정의로 올 시, 현재 상황 캐릭터별 print
+
+RNA - 장비 착용, hp, sp, mp 등을 Battle 씬 내 구조체로 옮겨옴. (왜냐하면 전투중에는 어차피 저장 안됨.)
+
+Battle 씬 구조체 - 적 + 아군 스텟, 스킬, 현 캐릭터별 위치
+
+
+### 상태별 리소스 정리
+
+ACTION_MENU -> 이동 클릭 시
+ - ACTION_MENU hide.
+ - CAST 흰색으로 CELL들이 보여짐.
+ - 뒤로 가기 버튼 (ACTION_MENU로 다시 이동)
+ - CELL클릭시 이동이니까 파랑색으로 EFFECT 한칸이 보여짐 + CONFIRM 창 뜸. +  (YES/NO)
+ - 또한 Drag가 인식이 됨. 즉 CAST cell이 보이고 그 위에 클릭하면 파랑색인데 드래그 시 EFFECT 중점이 옮겨다니는 것임. (마우스 떼면 Confirm 창)
+ - YES 시 CELL 정리, ACTION으로
+ - NO 시 다시 CAST 초기 상태임 (흰색만 보임)
+
+ACTION_MENU -> 아이템 클릭 시
+ - ACTION_MENU hide.
+ - LIST_MENU나오면서 아이템 목록이 나옴
+ - 뒤로 가기 버튼 (ACTION_MENU로 다시 이동)
+ - 만약 아이템을 클릭하면 CAST로 이동됨.
+ - CAST는 흰색 CELL이 표시됨. (역시 뒤로가기 버튼 있음. 이것 역시 정리 후 ACTION_MENU로 가짐.)
+ - CELL클릭시 회복류는 초록색으로 EFFECT 에 따른 칸들이 보임.  + CONFIRM 창 뜸. +  (YES/NO)
+ - YES 시 CELL 정리, ACTION으로
+ - NO 시 다시 CAST 초기 상태임 (흰색만 보임)
+
 ## 파일 구조
 
 ### 씬 파일

@@ -42,9 +42,13 @@ func _register_wukong() -> void:
 	data.display_name = "손오공"
 	data.description = "오행봉에서 봉인이 풀린 돌원숭이"
 	
+	# SP 타입 캐릭터
+	data.energy_type = CharacterData.EnergyType.SP
+	
 	# 능력치 (딜러/전열)
 	data.max_hp = 130
-	data.max_mp = 80
+	data.max_mp = 0
+	data.max_sg = 100  # SP 사용
 	_characters[data.id] = data
 
 

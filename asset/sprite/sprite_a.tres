@@ -1,0 +1,18 @@
+[gd_resource type="SpriteFrames" format=3 uid="uid://b0yweggga01oc"]
+
+[ext_resource type="Texture2D" uid="uid://dmvpmrrtenojs" path="res://asset/Texture/blocky/character-a.png" id="1_uww34"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3memy"]
+atlas = ExtResource("1_uww34")
+region = Rect2(0, 0, 64, 64)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3memy")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]

@@ -8,6 +8,25 @@ extends Node2D
 
 signal finished()
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# 전투 UI 상태 머신 (BATTLE_ARCHITECTURE.md 참조)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+enum BattleState {
+	IDLE,           # 턴 시작, 캐릭터 대기
+	ACTION_MENU,    # 행동 선택
+	LIST_MENU,      # 아이템/스킬 리스트 선택 중
+	CAST,           # 가용 범위 표시 (흰색)
+	EFFECT,         # 효과 범위 표시 + Confirm 창
+	ACTION          # 애니메이션 실행 중
+}
+
+var _state: BattleState = BattleState.IDLE
+
+func _set_state(new_state: BattleState) -> void:
+	_state = new_state
+	print("[BattleState] 상태 변경: ", BattleState.keys()[_state])
+
 # 위치 및 적 ID
 var _location_id: String = "bluewood_village"
 var _enemy_id: String = "rock_demon"
@@ -34,6 +53,7 @@ var _character_nodes: Dictionary = {}
 var _characters_parent: Node2D = null
 
 # UI 노드
+var _ui_layer: CanvasLayer = null
 var _turn_label: Label
 var _log_label: Label
 var _action_menu: VBoxContainer
@@ -58,7 +78,6 @@ var _is_player_turn: bool = true
 
 # 2단계 범위 시스템 상태
 var _selected_cast_pos: Vector2i = Vector2i(-1, -1)  # 시전 중심점
-var _range_phase: int = 0  # 0: 없음, 1: 가용범위 선택, 2: 효과범위 확인
 
 # 범위 색상 상수
 const RANGE_COLOR_MOVE := Color(0.3, 0.7, 1.0, 0.3)    # 파란색 (이동)
@@ -145,6 +164,10 @@ func _load_tilemap_background() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _create_ui() -> void:
+	# CanvasLayer 생성 (UI 전용)
+	_ui_layer = CanvasLayer.new()
+	add_child(_ui_layer)
+	
 	# 배경 (반투명)
 	var bg := ColorRect.new()
 	bg.color = Color(0.05, 0.02, 0.08, 0.5)
@@ -155,14 +178,14 @@ func _create_ui() -> void:
 	_characters_parent = Node2D.new()
 	add_child(_characters_parent)
 	
-	# 턴 표시 (상단)
+	# 턴 표시 (상단) - CanvasLayer에 추가하여 카메라 영향 없음
 	_turn_label = Label.new()
-	_turn_label.position = Vector2(512, 30)
-	_turn_label.size = Vector2(200, 40)
+	_turn_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_turn_label.offset_top = 30
 	_turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_turn_label.add_theme_font_size_override("font_size", 28)
 	_turn_label.add_theme_color_override("font_color", Color(1, 0.8, 0.2))
-	add_child(_turn_label)
+	_ui_layer.add_child(_turn_label)
 	
 	# 로그 표시 (하단)
 	_log_label = Label.new()
@@ -199,12 +222,11 @@ func _create_cancel_action_button() -> void:
 	_cancel_action_btn.visible = false
 	_cancel_action_btn.add_theme_font_size_override("font_size", 18)
 	_cancel_action_btn.pressed.connect(_on_back_button_pressed)
-	add_child(_cancel_action_btn)
+	_ui_layer.add_child(_cancel_action_btn)
 
 func _show_cancel_action_button() -> void:
 	if _cancel_action_btn:
 		_cancel_action_btn.visible = true
-		move_child(_cancel_action_btn, get_child_count() - 1)
 
 func _hide_cancel_action_button() -> void:
 	if _cancel_action_btn:
@@ -221,12 +243,11 @@ func _on_back_button_pressed() -> void:
 	_selected_target = null
 	_selected_item_id = ""
 	_selected_skill_id = ""
-	_range_phase = 0
 	
-	if _selected_actor:
-		_log_label.text = "행동을 선택하세요."
-		if _character_nodes.has(_selected_actor.id):
-			_show_action_menu(_character_nodes[_selected_actor.id])
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
+	_set_state(BattleState.ACTION_MENU)
+	_log_label.text = "행동을 선택하세요."
+	_show_action_menu()
 
 
 ## 기존 호환성 유지
@@ -277,7 +298,7 @@ func _create_action_menu() -> void:
 	_action_menu = VBoxContainer.new()
 	_action_menu.visible = false
 	_action_menu.modulate = Color(1, 1, 1, 0.95)
-	add_child(_action_menu)
+	_ui_layer.add_child(_action_menu)
 	
 	# 배경 패널
 	var panel := PanelContainer.new()
@@ -305,10 +326,9 @@ func _create_action_menu() -> void:
 	# 취소 버튼 없음 - action menu는 첫 단계이므로 취소할 필요 없음
 
 
-func _show_action_menu(character: Actor) -> void:
-	_action_menu.position = character.position + Vector2(80, -100)
+func _show_action_menu() -> void:
+	_action_menu.position = Vector2(100, 500)
 	_action_menu.visible = true
-	move_child(_action_menu, get_child_count() - 1)  # 최상단으로
 
 
 func _hide_action_menu() -> void:
@@ -390,8 +410,7 @@ func _create_item_menu() -> void:
 
 
 func _show_item_menu() -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	
 	_item_menu.position = _action_menu.position  # 행동 메뉴 위치 재사용
 	_item_menu.visible = true
@@ -406,7 +425,7 @@ func _create_skill_menu() -> void:
 	_skill_menu = VBoxContainer.new()
 	_skill_menu.visible = false
 	_skill_menu.modulate = Color(1, 1, 1, 0.95)
-	add_child(_skill_menu)
+	_ui_layer.add_child(_skill_menu)
 	
 	# 배경 패널
 	var panel := PanelContainer.new()
@@ -415,26 +434,8 @@ func _create_skill_menu() -> void:
 	var vbox := VBoxContainer.new()
 	panel.add_child(vbox)
 	
-	# 모든 스킬 표시 (나중에 캐릭터별로 필터링)
-	var all_skills := _skill_registry.get_all_skills()
-	for skill: SkillData in all_skills:
-		var cost_text := ""
-		if skill.mp_cost > 0:
-			cost_text += "MP %d" % skill.mp_cost
-		if skill.sg_cost > 0:
-			if cost_text.length() > 0:
-				cost_text += " "
-			cost_text += "SG %d" % skill.sg_cost
-		
-		var btn_text := "%s (%s)" % [skill.name, cost_text] if cost_text.length() > 0 else skill.name
-		
-		var btn := Button.new()
-		btn.text = btn_text
-		btn.custom_minimum_size = Vector2(140, 40)
-		btn.pressed.connect(_on_skill_selected.bind(skill.id))
-		vbox.add_child(btn)
-	
-	# 취소 버튼
+	# 스킬 버튼은 _show_skill_menu()에서 동적으로 생성
+	# 취소 버튼만 미리 생성
 	var cancel_btn := Button.new()
 	cancel_btn.text = "✖ 취소"
 	cancel_btn.custom_minimum_size = Vector2(140, 40)
@@ -443,37 +444,95 @@ func _create_skill_menu() -> void:
 
 
 func _show_skill_menu() -> void:
-	if _selected_actor == null:
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
+	
+	print(">>> _show_skill_menu() - actor.id: ", _selected_actor.id)
+	
+	# 기존 스킬 버튼 제거 (취소 버튼 제외)
+	var panel := _skill_menu.get_child(0) as PanelContainer
+	if panel:
+		var vbox := panel.get_child(0) as VBoxContainer
+		if vbox:
+			# 마지막 버튼(취소) 제외하고 모든 자식 제거
+			while vbox.get_child_count() > 1:
+				var child := vbox.get_child(0)
+				child.queue_free()
+			
+	# 선택된 캐릭터의 스킬만 가져오기
+	var skills := _skill_registry.get_skills_for_character(_selected_actor.id)
+	print(">>> 스킬 개수: ", skills.size())
+	
+	# 방어 코드: 스킬이 없으면 메시지 표시
+	if skills.is_empty():
+		_log_label.text = "사용 가능한 스킬이 없습니다."
+		push_warning("[BattleScreen] 캐릭터 '%s'에 스킬이 없습니다!" % _selected_actor.id)
 		return
 	
-	_skill_menu.position = _action_menu.position  # 행동 메뉴 위치 재사용
+	# 스킬 버튼 생성
+	if panel:
+		var vbox := panel.get_child(0) as VBoxContainer
+		if vbox:
+			# 취소 버튼 앞에 스킬 버튼 추가
+			for skill: SkillData in skills:
+				var cost_text := ""
+				if skill.mp_cost > 0:
+					cost_text += "MP %d" % skill.mp_cost
+				if skill.sg_cost > 0:
+					if cost_text.length() > 0:
+						cost_text += " "
+					cost_text += "SG %d" % skill.sg_cost
+				
+				var btn_text := "%s (%s)" % [skill.name, cost_text] if cost_text.length() > 0 else skill.name
+				
+				var btn := Button.new()
+				btn.text = btn_text
+				btn.custom_minimum_size = Vector2(140, 40)
+				btn.pressed.connect(_on_skill_selected.bind(skill.id))
+				print(">>> 스킬 버튼 생성: ", skill.name, " id: ", skill.id, " connected: ", btn.pressed.is_connected(_on_skill_selected))
+				# 취소 버튼 앞에 추가
+				vbox.add_child(btn)
+				vbox.move_child(btn, vbox.get_child_count() - 2)
+	
+	# 화면 오른쪽에 고정 위치로 표시 (CanvasLayer에 있으므로 카메라 영향 없음)
+	_skill_menu.position = Vector2(850, 200)
 	_skill_menu.visible = true
-	move_child(_skill_menu, get_child_count() - 1)  # 최상단으로
 
 
 func _hide_skill_menu() -> void:
+	if _skill_menu == null:
+		return
+	
+	# 동적 스킬 버튼들 제거 (취소 버튼 제외)
+	var panel := _skill_menu.get_child(0) as PanelContainer
+	if panel:
+		var vbox := panel.get_child(0) as VBoxContainer
+		if vbox:
+			while vbox.get_child_count() > 1:
+				var child := vbox.get_child(0)
+				if child is Button and child.pressed.is_connected(_on_skill_selected):
+					child.pressed.disconnect(_on_skill_selected)
+				child.queue_free()
+	
 	_skill_menu.visible = false
 
 
 func _on_skill_selected(skill_id: String) -> void:
-	if _selected_actor == null:
-		return
+	print(">>> _on_skill_selected 호출됨! skill_id: ", skill_id)
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	
 	var skill := _skill_registry.get_skill(skill_id)
-	if not skill:
-		_log_label.text = "스킬을 찾을 수 없습니다."
-		_hide_skill_menu()
-		return
+	assert(skill != null, "스킬을 찾을 수 없습니다: %s" % skill_id)
 	
-	# MP/SG 체크 (차감은 확정 후)
-	if _selected_actor.mp < skill.mp_cost:
+	print(">>> skill 찾음: ", skill.name, " cast_range: ", skill.cast_range)
+	print(">>> MP: ", _selected_actor.mp, "/", skill.mp_cost, " SG: ", _selected_actor.sg, "/", skill.sg_cost)
+	
+	# MP/SG 체크 (차감은 확정 후) - 비용이 0보다 클 때만 체크
+	if skill.mp_cost > 0 and _selected_actor.mp < skill.mp_cost:
 		_log_label.text = "MP가 부족합니다! (필요: %d, 보유: %d)" % [skill.mp_cost, _selected_actor.mp]
-		_hide_skill_menu()
 		return
 	
-	if _selected_actor.sg < skill.sg_cost:
+	if skill.sg_cost > 0 and _selected_actor.sg < skill.sg_cost:
 		_log_label.text = "SG가 부족합니다! (필요: %d, 보유: %d)" % [skill.sg_cost, _selected_actor.sg]
-		_hide_skill_menu()
 		return
 	
 	# MP/SG는 확정 후 차감 (취소 시 보존)
@@ -485,12 +544,12 @@ func _on_skill_selected(skill_id: String) -> void:
 
 
 func _show_skill_range(skill_id: String) -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	
 	var skill := _skill_registry.get_skill(skill_id)
-	if not skill:
-		return
+	assert(skill != null, "스킬을 찾을 수 없습니다: %s" % skill_id)
+	
+	print(">>> _show_skill_range - skill: ", skill.name, " cast_range: ", skill.cast_range)
 	
 	# 선택된 스킬 ID 저장
 	_selected_skill_id = skill_id
@@ -503,15 +562,14 @@ func _show_skill_range(skill_id: String) -> void:
 		_show_effect_range_for_skill(skill, _selected_cast_pos)
 	else:
 		# 가용 범위 표시 (흰색)
-		_range_phase = 1
+		_set_state(BattleState.CAST)
 		_log_label.text = "시전 위치를 선택하세요."
 		_show_cast_range_for_skill(skill)
 
 
 ## 스킬의 가용 범위 표시
 func _show_cast_range_for_skill(skill: SkillData) -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	
 	# 그리드 동적 생성
 	if _battle_grid == null:
@@ -527,8 +585,8 @@ func _show_cast_range_for_skill(skill: SkillData) -> void:
 
 ## 스킬의 효과 범위 표시
 func _show_effect_range_for_skill(skill: SkillData, center: Vector2i) -> void:
-	if _battle_grid == null:
-		return
+	print(">>> _show_effect_range_for_skill - center: ", center)
+	assert(_battle_grid != null, "_battle_grid가 null입니다")
 	
 	# 색상 결정
 	var effect_color := RANGE_COLOR_ATTACK
@@ -537,7 +595,7 @@ func _show_effect_range_for_skill(skill: SkillData, center: Vector2i) -> void:
 	
 	# 효과 범위 표시
 	_battle_grid.show_effect_range(center, skill.area_pattern, effect_color)
-	_range_phase = 2
+	_set_state(BattleState.EFFECT)
 	
 	# 뒤로 버튼 표시
 	_show_cancel_action_button()
@@ -614,8 +672,7 @@ func _on_item_selected(item_id: String) -> void:
 
 
 func _show_item_range_ally() -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	return
 	
 	# 아군 위치만 하이라이트 (맨해튼 거리 내)
@@ -634,8 +691,7 @@ func _show_item_range_ally() -> void:
 
 
 func _show_item_range_enemy(item: ItemData) -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	
 	var range_pattern: Array[Vector2i] = []
 	for x in range(-item.use_range, item.use_range + 1):
@@ -684,7 +740,7 @@ func _on_confirm_cancelled() -> void:
 	_selected_target = null
 	
 	# 가용 범위 선택 단계로 돌아가기
-	_range_phase = 1
+	_set_state(BattleState.CAST)
 	
 	# 그리드가 있으면 가용 범위 다시 표시
 	if is_instance_valid(_battle_grid) and _battle_grid.visible and _selected_actor:
@@ -707,8 +763,9 @@ func _on_confirm_cancelled() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _on_move_confirmed() -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
+	
+	_set_state(BattleState.ACTION)
 	
 	var target_pos := _battle_grid.get_selected_cell() if _battle_grid else Vector2i(-1, -1)
 	if target_pos == Vector2i(-1, -1):
@@ -741,8 +798,8 @@ func _on_move_confirmed() -> void:
 
 
 func _on_attack_confirmed() -> void:
-	if _selected_actor == null or _selected_target == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
+	assert(_selected_target != null, "_selected_target가 null입니다")
 	
 	_hide_battle_grid()
 	
@@ -751,8 +808,8 @@ func _on_attack_confirmed() -> void:
 
 
 func _on_skill_confirmed() -> void:
-	if _selected_actor == null or _selected_target == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
+	assert(_selected_target != null, "_selected_target가 null입니다")
 	
 	var skill := _skill_registry.get_skill(_selected_skill_id)
 	if not skill:
@@ -767,8 +824,7 @@ func _on_skill_confirmed() -> void:
 
 
 func _on_item_confirmed() -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	return
 	#var item := _item_registry.get_item(_selected_item_id)
 	#if not item:
@@ -852,13 +908,14 @@ func _find_unit_at(grid_pos: Vector2i, search_side: String) -> BattleData.Unit:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _on_grid_cell_clicked(grid_pos: Vector2i) -> void:
-	if not _battle_grid or not _battle_grid.is_movable_cell(grid_pos):
-		return
+	assert(_battle_grid != null, "_battle_grid가 null입니다")
+	assert(_battle_grid.is_movable_cell(grid_pos), "이동 불가능한 칸입니다")
 	
+	_set_state(BattleState.EFFECT)
 	_battle_grid.select_cell(grid_pos)
 	
 	# 2단계 범위 시스템 처리
-	if _range_phase == 1:
+	if _state == BattleState.CAST:
 		# 가용 범위에서 클릭 → 효과 범위 표시
 		_selected_cast_pos = grid_pos
 		
@@ -935,8 +992,7 @@ func _on_grid_cell_clicked(grid_pos: Vector2i) -> void:
 
 
 func _show_range_cells(center: Vector2i, range_pattern: Array[Vector2i], occupied: Array[Vector2i] = [], color: Color = Color(1, 0.5, 0.5, 0.3)) -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	
 	# 그리드 동적 생성
 	if _battle_grid == null:
@@ -951,8 +1007,7 @@ func _show_range_cells(center: Vector2i, range_pattern: Array[Vector2i], occupie
 
 
 func _show_movable_cells() -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	
 	# 점유된 칸 수집
 	var occupied: Array[Vector2i] = []
@@ -968,7 +1023,6 @@ func _show_movable_cells() -> void:
 		_battle_grid = TacticGrid.new()
 		add_child(_battle_grid)
 		_battle_grid.cell_clicked.connect(_on_grid_cell_clicked)
-		await get_tree().process_frame
 	
 	_battle_grid.visible = true
 	
@@ -1111,7 +1165,7 @@ func _on_character_clicked(actor: Actor, unit: BattleData.Unit, battle_char: Act
 	# 아군 클릭: 행동 메뉴 표시 (내 턴일 때만)
 	if unit.is_ally() and _is_player_turn:
 		_selected_actor = unit
-		_show_action_menu(battle_char)
+		_show_action_menu()
 	
 	# 적 클릭: 대상 선택
 	elif unit.is_enemy():
@@ -1140,10 +1194,10 @@ func _update_turn_display() -> void:
 		_move_camera_to_unit(actor)
 		
 		if _is_player_turn:
+			_set_state(BattleState.ACTION_MENU)
 			# 아군 턴이면 자동으로 action menu 표시
 			_selected_actor = actor
-			if _character_nodes.has(actor.id):
-				_show_action_menu(_character_nodes[actor.id])
+			_show_action_menu()
 		else:
 			print(">>> 적 턴 시작 - 0.5초 대기")
 			# 적 턴은 자동 진행
@@ -1173,33 +1227,33 @@ func _highlight_current_actor(actor: BattleData.Unit) -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _on_action_menu_selected(action_type: BattleData.ActionType) -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	
 	_selected_action = action_type
 	
 	match action_type:
 		BattleData.ActionType.ATTACK:
-			# _selected_actor 유지해야 함!
-			_action_menu.visible = false  # 메뉴만 숨김
+			_set_state(BattleState.CAST)
+			_action_menu.visible = false
 			_log_label.text = "공격할 칸을 선택하세요."
 			_show_attackable_cells()
 		BattleData.ActionType.SKILL:
-			# _selected_actor 유지해야 함!
-			_action_menu.visible = false  # 메뉴만 숨김
+			_set_state(BattleState.LIST_MENU)
+			_action_menu.visible = false
 			_log_label.text = "사용할 스킬을 선택하세요."
 			_show_skill_menu()
 		BattleData.ActionType.MOVE:
-			# _selected_actor 유지해야 함!
-			_action_menu.visible = false  # 메뉴만 숨김
+			_set_state(BattleState.CAST)
+			_action_menu.visible = false
 			_log_label.text = "이동할 칸을 선택하세요."
 			_show_movable_cells()
 		BattleData.ActionType.ITEM:
-			# _selected_actor 유지해야 함!
-			_action_menu.visible = false  # 메뉴만 숨김
+			_set_state(BattleState.LIST_MENU)
+			_action_menu.visible = false
 			_log_label.text = "사용할 아이템을 선택하세요."
 			_show_item_menu()
 		BattleData.ActionType.END_TURN:
+			_set_state(BattleState.IDLE)
 			_hide_action_menu()
 			_selected_actor = null
 			_battle_data.next_turn()
@@ -1213,8 +1267,7 @@ func _on_action_menu_selected(action_type: BattleData.ActionType) -> void:
 
 
 func _show_attackable_cells() -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	
 	# 2단계 범위 시스템
 	if _selected_actor.attack_cast_range == 0:
@@ -1223,15 +1276,14 @@ func _show_attackable_cells() -> void:
 		_show_effect_range_for_attack(_selected_cast_pos)
 	else:
 		# 가용 범위 표시 (흰색)
-		_range_phase = 1
+		_set_state(BattleState.CAST)
 		_log_label.text = "공격할 위치를 선택하세요."
 		_show_cast_range_for_attack()
 
 
 ## 공격의 가용 범위 표시
 func _show_cast_range_for_attack() -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	
 	# 그리드 동적 생성
 	if _battle_grid == null:
@@ -1252,7 +1304,7 @@ func _show_effect_range_for_attack(center: Vector2i) -> void:
 	
 	# 효과 범위 표시 (SINGLE 패턴)
 	_battle_grid.show_effect_range(center, SkillData.AreaPattern.SINGLE, RANGE_COLOR_ATTACK)
-	_range_phase = 2
+	_set_state(BattleState.EFFECT)
 	
 	# 해당 위치에 적이 있으면 타겟 설정
 	var target_unit := _find_unit_at(center, "enemy")
@@ -1285,8 +1337,7 @@ func _highlight_enemies() -> void:
 
 
 func _on_target_selected(target: BattleData.Unit) -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	
 	_execute_action(target)
 
@@ -1508,8 +1559,7 @@ func _on_battle_confirm_pressed() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _execute_skill_action(skill: SkillData, target_unit: BattleData.Unit) -> void:
-	if _selected_actor == null:
-		return
+	assert(_selected_actor != null, "_selected_actor가 null입니다")
 	
 	match skill.type:
 		SkillData.SkillType.ATTACK:

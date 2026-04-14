@@ -3,6 +3,7 @@
 [ext_resource type="TileSet" uid="uid://brh3yq3ty0set" path="res://asset/tileset/grass_tileset.tres" id="1_kct05"]
 [ext_resource type="PackedScene" uid="uid://pvnmssu2aymg" path="res://scenes/entities/actor.tscn" id="2_26una"]
 [ext_resource type="TileSet" uid="uid://6lvuua0cw2gk" path="res://asset/tileset/prop_tileset.tres" id="2_w8i26"]
+[ext_resource type="SpriteFrames" uid="uid://b0yweggga01oc" path="res://asset/sprite/sprite_a.tres" id="3_50740"]
 [ext_resource type="PackedScene" uid="uid://j1c7o4lq8k1g" path="res://scenes/entities/gate.tscn" id="3_ur26d"]
 [ext_resource type="PackedScene" uid="uid://dxny3w10ne2as" path="res://scenes/entities/treasure.tscn" id="4_hbh7j"]
 
@@ -15,6 +16,9 @@ tile_set = ExtResource("1_kct05")
 [node name="NPC" type="Node2D" parent="." unique_id=2087789547]
 
 [node name="Stranger1" parent="NPC" unique_id=987135416 instance=ExtResource("2_26una")]
+
+[node name="AnimatedSprite2D" parent="NPC/Stranger1" index="1" unique_id=409637902]
+sprite_frames = ExtResource("3_50740")
 
 [node name="Gate" type="Node2D" parent="." unique_id=1174235281]
 
@@ -38,3 +42,5 @@ position = Vector2(200, 300)
 [node name="PropLayer" type="TileMapLayer" parent="." unique_id=1160037627]
 tile_map_data = PackedByteArray("AAABAAEAAQANAAsAAAABAAIAAQANAAwAAAACAAEAAQAOAAsAAAACAAIAAQAOAAwAAAADAAMAAQANAAsAAAADAAQAAQANAAwAAAAEAAMAAQAOAAsAAAAEAAQAAQAOAAwAAAAFAAUAAQANAAsAAAAFAAYAAQANAAwAAAAGAAUAAQAOAAsAAAAGAAYAAQAOAAwAAAAHAAcAAQANAAsAAAAHAAgAAQANAAwAAAAIAAcAAQAOAAsAAAAIAAgAAQAOAAwAAAAJAAkAAQANAAsAAAAJAAoAAQANAAwAAAAKAAkAAQAOAAsAAAAKAAoAAQAOAAwAAAALAAsAAQANAAsAAAALAAwAAQANAAwAAAAMAAsAAQAOAAsAAAAMAAwAAQAOAAwAAAA=")
 tile_set = ExtResource("2_w8i26")
+
+[editable path="NPC/Stranger1"]

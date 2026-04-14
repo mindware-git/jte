@@ -310,13 +310,14 @@ func _create_npc_interactable(npc: Actor) -> void:
 	interactable.name = npc.name + "_Interactable"
 	interactable.interact_type = "npc"
 	interactable.interact_data = {"npc_id": npc.name.to_snake_case()}
-	interactable.position = npc.position
+	# position 설정 제거 - NPC의 자식으로 추가하면 NPC를 따라다님
 	
 	# 시그널 연결
 	interactable.interacted.connect(_on_interactable_interacted)
 	
-	add_child(interactable)
-	print("NPC Interactable 생성: ", interactable.name, " at ", interactable.position)
+	# NPC의 자식으로 추가하여 NPC 이동 시 함께 이동
+	npc.add_child(interactable)
+	print("NPC Interactable 생성: ", interactable.name, " (NPC 자식)")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
